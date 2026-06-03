@@ -2013,6 +2013,101 @@ function applyChallengesFromText(text,sourceLabel){
   toast(`✅ ${sourceLabel}から ${bullets.length} 件の課題を読み込みました`);
 }
 
+/* 段落内テキスト連結（<w:p>下の全w:tを順番に） */
+function _paraText(p){
+  const ts=p.getElementsByTagName('w:t');
+  let s="";for(const t of ts)s+=t.textContent;
+  return s;
+}
+/* セル直下の段落を改行で連結 */
+function _cellText(tc){
+  const paras=tc.getElementsByTagName('w:p');
+  const out=[];
+  for(const p of paras){const s=_paraText(p);if(s)out.push(s);}
+  return out.join("\n");
+}
+
+/* Wordから「課題候補」を抽出（テーブル構造＋箇条書き両対応） */
+function extractBulletsFromDocxXml(xml){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xml,'application/xml');
+
+  // ── 1) テーブルから抽出 ──
+  // 「番号列＋テキスト列」のパターンを検出
+  //   - 1列目が "#" のヘッダー行はスキップ
+  //   - 1列目が "1"〜"99" の整数 (or 全角) のとき、2列目を採用
+  const tables=doc.getElementsByTagName('w:tbl');
+  const HEAD_WORDS=/^(#|No\.?|番号|セッションで扱いたい|課題|現状|望む|困りごと|セッション終了|今回|👉|📌|💡|🌿|✏️|🎯|心構え|書き方)/;
+  // 「書き方の例」「心構え」など、テンプレ既知の例文/説明文を除外するキーワード
+  const EXAMPLE_PHRASES=[
+    "本来の力が出せない",
+    "上司との関係がぎくしゃく",
+    "自分に自信が持てず、新しいことに踏み出せない",
+    "将来やりたいことが見えず、もやもや",
+    "パートナーとの関係を、もっと温かく深めたい",
+    "怒りや不安などの感情に振り回される",
+    "やるべきことをつい後回し",
+    "人前で話すと緊張してしまい",
+    "どんな領域でもOK",
+    "ささいなことかも",
+    "感情が動くことがあります",
+    "扱う課題を一緒に選んでいきます",
+    "完璧でなくて大丈夫",
+    "書き出すことそのものが、最初の整理",
+  ];
+  const isExample=(s)=>EXAMPLE_PHRASES.some(p=>s.includes(p));
+
+  const tableBullets=[];
+  for(const tbl of tables){
+    const rows=tbl.getElementsByTagName('w:tr');
+    for(const tr of rows){
+      const cells=tr.getElementsByTagName('w:tc');
+      if(cells.length<2)continue;
+      const c0=_cellText(cells[0]).trim();
+      const c1=_cellText(cells[1]).trim();
+      if(!c1)continue;
+      if(HEAD_WORDS.test(c1))continue; // ヘッダー行を除外
+      // 1列目が空、または数字／番号記号
+      const numericLike=/^([0-9０-９#]+|・|●|○|◯|◎|▪|◆|■|□)$/.test(c0)||c0==="";
+      if(!numericLike)continue;
+      // c1 内に複数行があれば各行を別の課題として扱う
+      c1.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(s=>{
+        // 先頭の箇条書き記号や番号を取り除く
+        s=s.replace(/^\s*[・•●○◯◎▪◆■□☆★▶▷▸➢➤*\-–—#]\s*/,'');
+        s=s.replace(/^\s*(\d+[\.\)）\.：:]|\(\d+\)|[０-９]+[\.\)）\.：:])\s*/,'');
+        if(s&&!isExample(s))tableBullets.push(s);
+      });
+    }
+  }
+
+  // テーブルから3件以上取れていれば、テンプレ利用と判断してそれだけ採用
+  if(tableBullets.length>=3){
+    const seen=new Set();
+    return tableBullets.filter(b=>{
+      const k=b.trim();
+      if(!k||k.length<2||k.length>200)return false;
+      if(seen.has(k))return false;
+      seen.add(k);return true;
+    });
+  }
+
+  // ── 2) 段落からの箇条書き抽出（テーブルから取れなかった時のフォールバック） ──
+  const paras=doc.getElementsByTagName('w:p');
+  const lines=[];
+  for(const p of paras){const s=_paraText(p);if(s)lines.push(s);}
+  const fromParas=extractBulletsFromText(lines.join("\n")).filter(b=>!isExample(b));
+
+  // テーブル＋段落をマージ
+  const merged=tableBullets.concat(fromParas);
+  const seen=new Set();
+  return merged.filter(b=>{
+    const k=b.trim();
+    if(!k||k.length<2||k.length>200)return false;
+    if(seen.has(k))return false;
+    seen.add(k);return true;
+  });
+}
+
 async function loadPreworkFile(ev){
   const file=ev.target.files[0];if(!file)return;
   ev.target.value="";
@@ -2022,17 +2117,14 @@ async function loadPreworkFile(ev){
       const buf=await file.arrayBuffer();
       const zip=await JSZip.loadAsync(buf);
       const docXml=await zip.file('word/document.xml').async('string');
-      // <w:p>を行として、<w:t>のテキストを連結
-      const parser=new DOMParser();
-      const xml=parser.parseFromString(docXml,'application/xml');
-      const paras=xml.getElementsByTagName('w:p');
-      const lines=[];
-      for(const p of paras){
-        const ts=p.getElementsByTagName('w:t');
-        let s="";for(const t of ts)s+=t.textContent;
-        lines.push(s);
-      }
-      applyChallengesFromText(lines.join("\n"),"Wordファイル");
+      const bullets=extractBulletsFromDocxXml(docXml);
+      if(bullets.length===0){toast("Wordから課題を見つけられませんでした");return;}
+      const items=bullets.slice(0,10);
+      while(items.length<5)items.push("");
+      session.challenges=items;
+      session.selectedIdx=null;
+      renderChallenges();updateSelLabel();
+      toast(`✅ Wordファイルから ${bullets.length} 件の課題を読み込みました`);
     }else{
       const text=await file.text();
       applyChallengesFromText(text,"テキストファイル");
