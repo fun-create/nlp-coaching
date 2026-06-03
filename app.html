@@ -193,6 +193,20 @@
   .kv{display:flex;gap:10px;font-size:13.5px;margin:5px 0}
   .kv b{min-width:96px;color:var(--muted);font-weight:700}
   .note-area{width:100%;min-height:120px}
+  /* ライブラリタブ */
+  .presup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px}
+  .presup-card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);transition:.18s}
+  .presup-card:hover{transform:translateY(-2px);border-color:var(--brand)}
+  .presup-card .pc-num{font-size:11px;font-weight:700;color:var(--brand-d);letter-spacing:1px;margin-bottom:4px}
+  .presup-card .pc-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;line-height:1.4}
+  .presup-card .pc-body{font-size:13px;color:var(--muted);line-height:1.75}
+  .presup-card .pc-icon{font-size:28px;float:right;margin:-2px 0 8px 12px;opacity:.85}
+  .mindset-grid{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+  .mindset-card{background:var(--panel);border-left:5px solid var(--brand);border-radius:0 14px 14px 0;padding:18px 20px;box-shadow:var(--shadow)}
+  .mindset-card .mc-label{font-size:11px;font-weight:700;color:var(--brand-d);letter-spacing:1px;margin-bottom:3px}
+  .mindset-card .mc-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:7px}
+  .mindset-card .mc-body{font-size:13.5px;color:var(--ink);line-height:1.8}
+  .mindset-card .mc-tip{margin-top:9px;background:var(--accent-l);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--accent)}
   @media(max-width:780px){
     .app{flex-direction:column}
     .side{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center}
@@ -399,8 +413,16 @@
 
     <!-- LIBRARY -->
     <section class="view" id="view-library">
-      <div class="page-h"><h2>📚 ワーク図鑑</h2><p>NLPコーチングで使う主要なワークの一覧です。クリックで進行ガイドを開けます。</p></div>
-      <div class="rec" id="lib-list"></div>
+      <div class="page-h"><h2>📚 ワーク図鑑</h2><p>NLPの前提・コーチの心構えと、主要なワーク一覧です。</p></div>
+      <!-- タブ -->
+      <div id="lib-tabs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        <button class="lib-tab btn" data-tab="presup" onclick="switchLibTab('presup')">🌱 NLPの前提</button>
+        <button class="lib-tab btn ghost" data-tab="mindset" onclick="switchLibTab('mindset')">🧭 コーチの心構え</button>
+        <button class="lib-tab btn ghost" data-tab="works" onclick="switchLibTab('works')">⚡ ワーク一覧</button>
+      </div>
+      <div id="lib-presup"></div>
+      <div id="lib-mindset" style="display:none"></div>
+      <div id="lib-works" style="display:none"><div class="rec" id="lib-list"></div></div>
     </section>
 
     <!-- SETTINGS -->
@@ -963,7 +985,7 @@ function go(view){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   if(view==='home')renderHome();
   if(view==='history')renderHistory();
-  if(view==='library')renderLibrary();
+  if(view==='library'){renderLibrary();switchLibTab(_libTab||'presup');}
   if(view==='settings')renderSettings();
   if(view==='evaluate')renderEvalTranscriptBanner();
   window.scrollTo(0,0);
@@ -1634,7 +1656,104 @@ function closeModal(){document.getElementById('modal').classList.remove('show');
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal();};
 
 /* ===================== ワーク図鑑 ===================== */
+/* ===================== ライブラリ共通データ ===================== */
+const PRESUPPOSITIONS=[
+  {icon:"🗺️", title:"地図は領土ではない",
+   body:"人は現実そのものではなく、自分が作り上げた『地図（解釈・信念・フィルター）』を生きています。同じ出来事でも人によって体験がまったく異なるのはそのためです。地図を描き替えれば、世界の体験も変わります。",
+   tip:"コーチへ：クライアントの「地図」を尊重しながら、新しい視点の扉を開くのが私たちの仕事です。"},
+  {icon:"↩️", title:"相手の反応がコミュニケーションの意味",
+   body:"自分が「伝えたつもり」ではなく、相手に伝わった結果がすべてです。意図と結果がズレたとき、伝え方を変えるのはコーチ側の責任。",
+   tip:"コーチへ：クライアントが反応しないのは、伝え方を変えるサインです。"},
+  {icon:"🔄", title:"失敗はなく、フィードバックがあるだけ",
+   body:"うまくいかない結果も、次に活かせる有益な情報です。「失敗」という枠組みを外すとき、クライアントは挑戦を続けられます。",
+   tip:"コーチへ：セッションがうまくいかなかったときも、あなたのフィードバックです。"},
+  {icon:"💡", title:"人はその時できる最善の選択をしている",
+   body:"どんな行動の裏にも、その人なりの肯定的な意図があります。行動を責めるのではなく、意図を理解し、より良い方法を一緒に見つけましょう。",
+   tip:"コーチへ：「なぜそうしたのか」より「どうなりたいのか」を問うと前向きになります。"},
+  {icon:"🌱", title:"人は変化に必要なリソースをすでに持っている",
+   body:"答えはすでにクライアントの中にあります。コーチは答えを与えるのではなく、クライアント自身が持つ力・知恵・経験を引き出す「案内人」です。",
+   tip:"コーチへ：「何が邪魔していますか？」より「どんな力がすでにありますか？」の方が前進を生みます。"},
+  {icon:"🧠", title:"心と身体はひとつのシステム",
+   body:"姿勢・呼吸・表情を変えると、感情や思考も変わります。身体は心のサインを映し出す鏡。非言語の変化に敏感でいることがコーチの目です。",
+   tip:"コーチへ：クライアントが背筋を伸ばしたとき、内側でも何かが変わっています。"},
+  {icon:"🔑", title:"選択肢は多いほどよい",
+   body:"行き詰まりとは「選択肢が一つしかない状態」。二択に見えるとき、三つ目・四つ目の道を一緒に探しましょう。",
+   tip:"コーチへ：「他には？」「もし制限がなかったら？」がクライアントの選択肢を広げます。"},
+  {icon:"🤝", title:"抵抗はラポール不足のサイン",
+   body:"クライアントが動かないとき、押すのではなくまずラポールを確認しましょう。抵抗はメッセージ——「まだ安全を感じていない」というサインです。",
+   tip:"コーチへ：抵抗を感じたらペーシングに戻る。理解されていると感じるとき、人は動けます。"},
+];
+
+const COACH_MINDSET=[
+  {label:"コミュニケーターポジション", title:"慈愛・無批判・気づきの状態で向き合う",
+   body:"コーチングの場に入る前に、自分の内側を整えましょう。「この人はすでに十分な力を持っている」という信頼と、評価・批判を手放した開かれた心。それがセッション最大のリソースです。",
+   tip:"🌬️ セッション前に一度深く息を吐く。緊張でも期待でもなく、ニュートラルな「今ここ」に戻ることがスタートラインです。"},
+  {label:"傾聴の姿勢", title:"聞くとは、相手の世界に入ること",
+   body:"コーチが話す時間は30%以下が理想。クライアントが沈黙するとき、それは内側で何かが起きているサインです。沈黙を埋めず、待つ勇気を持ちましょう。言葉の裏にある感情・意図・価値観に耳を澄ませてください。",
+   tip:"💡 メモを取りながら聞くとき、画面より相手の目・姿勢・表情を観察する時間を多く取りましょう。"},
+  {label:"問いかけの質", title:"良い問いは答えではなく、気づきを生む",
+   body:"コーチの質問は「正解を引き出すもの」ではなく「クライアント自身が答えを見つけるための空間を作るもの」です。クローズド質問（Yes/No）より、オープン質問（どんな・どう・本当は）で内側の世界を引き出しましょう。",
+   tip:"🎯 「なぜ」は責める響きになることがあります。「どうして」「何が影響していますか？」に言い換えると柔らかくなります。"},
+  {label:"ラポールとペーシング", title:"信頼は言葉より姿勢・呼吸・テンポで作られる",
+   body:"クライアントの話すスピード・声のトーン・使う言葉・姿勢に、さりげなく合わせましょう（ペーシング）。信頼が育ったら、こちらがリードして望ましい状態へ導けます（リーディング）。",
+   tip:"🌊 クライアントがゆっくり話すとき、こちらも急がない。呼吸を合わせるだけで場の安心感が変わります。"},
+  {label:"エコロジーチェック", title:"変化が生態系全体にとって良いか確認する",
+   body:"目標が達成されることで、クライアントの他の価値観・関係・生活に悪影響がないかを必ず確認します。良い変化も、周囲との整合性がなければ長続きしません。クライアント全体のシステムを視野に入れましょう。",
+   tip:"⚖️ 「それが叶ったとき、困ることや失うものはありますか？」この一問がセッションを安全にします。"},
+  {label:"コーチの領域", title:"コーチは案内人であり、治療者ではない",
+   body:"強いトラウマ・うつ・依存など、医療・心理療法の領域に踏み込まないことが倫理の基本です。クライアントを適切な専門家へつなぐことも、優れたコーチの仕事です。できることとできないことを明確に持ちましょう。",
+   tip:"🛡️ 「今日の話は少し、私の専門の外かもしれません」と正直に伝えることが、最も誠実なサポートです。"},
+];
+
+let _libTab='presup';
+function switchLibTab(tab){
+  _libTab=tab;
+  ['presup','mindset','works'].forEach(t=>{
+    document.getElementById('lib-'+t).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.lib-tab').forEach(b=>{
+    const on=b.dataset.tab===tab;
+    b.className='lib-tab btn'+(on?'':' ghost');
+  });
+}
+
+function renderPresup(){
+  const box=document.getElementById('lib-presup');if(!box)return;
+  box.innerHTML=
+    `<div class="card" style="background:var(--brand-l);border-color:#cfe7e1;margin-bottom:18px">
+       <h3 style="margin-bottom:6px">🌱 NLPの前提（プリサポジション）</h3>
+       <p class="small" style="margin:0">NLPには、コーチが持つと関わりが豊かになる「前提」があります。事実というより、<b>「そう考えると役に立つ」という心構えのセット</b>です。これらを内側に持つとき、クライアントへの問いかけが自然と深くなります。</p>
+     </div>
+     <div class="presup-grid">${PRESUPPOSITIONS.map((p,i)=>`
+       <div class="presup-card">
+         <div class="pc-icon">${p.icon}</div>
+         <div class="pc-num">前提 ${i+1}</div>
+         <div class="pc-title">${esc(p.title)}</div>
+         <div class="pc-body">${esc(p.body)}</div>
+         ${p.tip?`<div class="fb" style="margin-top:10px;font-size:12.5px">💬 ${esc(p.tip)}</div>`:''}
+       </div>`).join('')}
+     </div>`;
+}
+
+function renderMindset(){
+  const box=document.getElementById('lib-mindset');if(!box)return;
+  box.innerHTML=
+    `<div class="card" style="background:var(--accent-l);border-color:#dcdcf7;margin-bottom:18px">
+       <h3 style="margin-bottom:6px">🧭 コーチの心構え</h3>
+       <p class="small" style="margin:0">技法の前に大切な「あり方」です。コーチとしての内側の姿勢がセッションの質を決めます。セッション前の準備や振り返りにご活用ください。</p>
+     </div>
+     <div class="mindset-grid">${COACH_MINDSET.map((m,i)=>`
+       <div class="mindset-card">
+         <div class="mc-label">${esc(m.label)}</div>
+         <div class="mc-title">${esc(m.title)}</div>
+         <div class="mc-body">${esc(m.body)}</div>
+         ${m.tip?`<div class="mc-tip">${esc(m.tip)}</div>`:''}
+       </div>`).join('')}
+     </div>`;
+}
+
 function renderLibrary(){
+  renderPresup();renderMindset();
   const box=document.getElementById('lib-list');box.innerHTML="";
   WORKS.forEach(w=>{
     const el=document.createElement('div');el.className="wk";
