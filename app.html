@@ -230,7 +230,7 @@
       <button data-view="guide"><span class="ic">🧭</span>③ 進行ガイド</button>
       <button data-view="evaluate"><span class="ic">📊</span>④ 評価</button>
       <button data-view="history"><span class="ic">🗂️</span>履歴</button>
-      <button data-view="library"><span class="ic">📚</span>ワーク図鑑</button>
+      <button data-view="library"><span class="ic">📚</span>NLPガイド</button>
       <button data-view="settings"><span class="ic">⚙️</span>設定</button>
     </nav>
     <div class="foot">
@@ -368,13 +368,13 @@
       <div class="step-flow"><span>① ヒアリング</span><span class="ar">→</span><span class="on">② 提案</span><span class="ar">→</span><span>③ ガイド</span><span class="ar">→</span><span>④ 評価</span></div>
       <div class="card" id="rec-summary" style="background:var(--brand-l);border-color:#cfe7e1"></div>
       <div class="rec" id="rec-list"></div>
-      <p class="small muted" style="margin-top:14px">※ 他のワークは「📚 ワーク図鑑」からも選べます。クライアントの反応を見ながら柔軟に選択してください。</p>
+      <p class="small muted" style="margin-top:14px">※ 他のワークは「📚 NLPガイド」からも選べます。クライアントの反応を見ながら柔軟に選択してください。</p>
     </section>
 
     <!-- GUIDE -->
     <section class="view" id="view-guide">
       <div class="page-h"><h2>③ 進行ガイド</h2><p>台本と観察ポイントを見ながら、リアルタイムでワークを進めます。</p></div>
-      <div id="guide-empty" class="card empty"><div class="big">🧭</div><p>ワークが選択されていません。<br>「② ワーク提案」または「📚 ワーク図鑑」から選んでください。</p>
+      <div id="guide-empty" class="card empty"><div class="big">🧭</div><p>ワークが選択されていません。<br>「② ワーク提案」または「📚 NLPガイド」から選んでください。</p>
         <button class="btn ghost" onclick="go('hearing')">ヒアリングから始める</button></div>
       <div id="guide-body" style="display:none"></div>
     </section>
@@ -413,7 +413,7 @@
 
     <!-- LIBRARY -->
     <section class="view" id="view-library">
-      <div class="page-h"><h2>📚 ワーク図鑑</h2><p>NLPの前提・コーチの心構えと、主要なワーク一覧です。</p></div>
+      <div class="page-h"><h2>📚 NLPガイド</h2><p>NLPの前提・コーチの心構えと、主要なワーク一覧です。</p></div>
       <!-- タブ -->
       <div id="lib-tabs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
         <button class="lib-tab btn" data-tab="presup" onclick="switchLibTab('presup')">🌱 NLPの前提</button>
@@ -1655,7 +1655,7 @@ function resumeChallenges(id){
 function closeModal(){document.getElementById('modal').classList.remove('show');}
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal();};
 
-/* ===================== ワーク図鑑 ===================== */
+/* ===================== NLPガイド ===================== */
 /* ===================== ライブラリ共通データ ===================== */
 const PRESUPPOSITIONS=[
   {icon:"🗺️", title:"地図は領土ではない",
