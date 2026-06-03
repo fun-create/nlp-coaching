@@ -1545,7 +1545,12 @@ function viewHistory(id){
      </div>
      ${mh}
      ${r.notes?`<div class="divider"></div><b class="small">📝 メモ</b><div class="fb" style="margin-top:6px">${esc(r.notes)}</div>`:""}
-     ${r.recordingId?`<div class="divider"></div><b class="small">🎙 録音（${fmtDur(r.recordingDur)}）</b><div class="audio-row"><audio controls id="hist-audio-${r.id}"></audio></div>`:""}
+     ${r.recordingId?`<div class="divider"></div>
+       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+         <b class="small">🎙 録音（${fmtDur(r.recordingDur)}）</b>
+         <button class="btn gray sm" onclick="delRecording(${r.id})" style="color:var(--bad)">🗑 録音を削除</button>
+       </div>
+       <div class="audio-row"><audio controls id="hist-audio-${r.id}" style="flex:1;min-width:0;max-width:100%"></audio></div>`:""}
      ${r.transcript?`<details style="margin-top:6px"><summary class="small" style="cursor:pointer;color:var(--brand-d)">📝 文字起こしを表示 / コピー</summary><div class="tx-box" style="margin-top:8px">${esc(r.transcript)}</div><button class="btn ghost sm" style="margin-top:8px" onclick='copyText(${JSON.stringify(r.transcript)})'>📋 コピー</button></details>`:""}
      <div class="divider"></div>
      <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:space-between;align-items:center">
@@ -1561,7 +1566,22 @@ function viewHistory(id){
 function delHistory(id){
   if(!confirm("この記録を削除しますか？録音も削除されます。"))return;
   const r=HIST(id);if(r&&r.recordingId)idbDel(r.recordingId);
-  saveHistory(loadHistory().filter(x=>x.id!==id));renderHistory();toast("削除しました");
+  saveHistory(loadHistory().filter(x=>x.id!==id));renderHistory();closeModal();toast("削除しました");
+}
+async function delRecording(histId){
+  if(!confirm("録音音声を削除しますか？\nセッション記録・文字起こしはそのまま残ります。"))return;
+  const r=HIST(histId);if(!r||!r.recordingId)return;
+  await idbDel(r.recordingId);
+  const h=loadHistory();const idx=h.findIndex(x=>x.id===histId);
+  if(idx>=0){h[idx].recordingId=null;h[idx].recordingDur=0;saveHistory(h);}
+  toast("録音を削除しました");closeModal();
+  setTimeout(()=>viewHistory(histId),120);
+}
+async function delCurrentRecording(){
+  if(!confirm("この録音を削除しますか？\n文字起こしテキストは残ります。"))return;
+  if(session.recordingId)await idbDel(session.recordingId);
+  session.recordingId=null;session.recordingDur=0;
+  renderRecbar();renderEvalTranscriptBanner();toast("録音を削除しました");
 }
 function resumeChallenges(id){
   const r=HIST(id);if(!r)return;
@@ -1779,7 +1799,11 @@ function renderEvalTranscriptBanner(){
   el.style.display='block';
   el.innerHTML=`<div class="card" style="background:var(--brand-l);border-color:#cfe7e1">
     <h3>🎙 録音した会話${session.transcript?'の文字起こし':''}</h3>
-    ${session.recordingId?`<div class="audio-row"><span class="small muted">録音（${fmtDur(session.recordingDur)}）</span><audio controls id="eval-audio"></audio></div>`:''}
+    ${session.recordingId?`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <span class="small muted">録音（${fmtDur(session.recordingDur)}）</span>
+        <button class="btn gray sm" onclick="delCurrentRecording()" style="color:var(--bad)">🗑 録音を削除</button>
+      </div>
+      <div class="audio-row"><audio controls id="eval-audio" style="flex:1;min-width:0;max-width:100%"></audio></div>`:''}
     ${session.transcript?`<div class="tx-box" id="eval-tx">${esc(session.transcript)}</div>
     <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
       <button class="btn sm" onclick="evaluateText(session.transcript,'録音の文字起こし')">この文字起こしで評価する</button>
