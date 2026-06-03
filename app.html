@@ -1772,15 +1772,25 @@ function addLine(text){
 }
 function setSpeaker(s){REC.speaker=(REC.speaker===s?"":s);renderRecbar();}
 
+function currentView(){
+  const v=document.querySelector('.view.active');return v?v.id.replace('view-',''):'';
+}
 function renderRecbar(){
   const b=document.getElementById('recbar');if(!b)return;
+  const view=currentView();
+  const showPages=['hearing','guide'];
   if(!REC.active){
+    // 録音していないときはヒアリング・ガイドページのみ表示
+    if(!showPages.includes(view)){b.style.display='none';return;}
+    b.style.display='flex';
     b.className='recbar idle';
     const has=session.recordingId?`<span style="opacity:.85">｜録音あり（${fmtDur(session.recordingDur)}）</span>`:"";
     b.innerHTML=`<span style="font-size:15px">🎙</span><span>セッションを録音</span>`+
       `<button class="start" onclick="recStart()">${session.recordingId?'▶ 再録音':'● 録音を開始'}</button>${has}`;
     return;
   }
+  // 録音中はどのページでも必ず表示（停止できるように）
+  b.style.display='flex';
   b.className='recbar live'+(REC.paused?' paused':'');
   b.innerHTML=
     `<span class="dot"></span><span class="tt" id="rec-tt">${fmtDur(REC.elapsed)}</span>`+
