@@ -232,10 +232,25 @@
 
     <!-- HOME -->
     <section class="view active" id="view-home">
-      <div class="page-h">
-        <h2>こんにちは、コーチ 👋</h2>
-        <p>NLPコーチングのセッションを、ヒアリングから評価まで一気通貫でサポートします。</p>
+      <div class="page-h" id="home-greeting-area">
+        <h2 id="home-greeting">こんにちは、コーチ 👋</h2>
+        <p id="home-sub">NLPコーチングのセッションを、ヒアリングから評価まで一気通貫でサポートします。</p>
       </div>
+
+      <!-- セッション前準備カード -->
+      <div class="card" id="home-prep-card" style="background:linear-gradient(135deg,#f0f7f5 0%,#e8f1fb 100%);border-color:#cfe7e1;margin-bottom:18px">
+        <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+          <div style="font-size:36px;line-height:1;flex-shrink:0" id="home-prep-icon">🌿</div>
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+              <b style="font-size:13px;color:var(--brand-d)">セッション前のひとこと</b>
+              <button class="btn gray sm" onclick="rotateTip()" style="font-size:11px;padding:4px 9px">↻ 別のヒント</button>
+            </div>
+            <p id="home-prep-msg" style="margin:0;font-size:14px;line-height:1.8;color:var(--ink)"></p>
+          </div>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col card" style="background:linear-gradient(160deg,#2f8f7f,#22675c);color:#fff;border:0">
           <h3 style="color:#fff">🚀 新しいセッションを始める</h3>
@@ -399,6 +414,20 @@
           <b>🧩 ルールベース：</b>無料・オフライン・データは端末外に出ません。キーワードと会話構造から機械的に判定します。<br>
           <b>✨ AIモード：</b>Claudeが文脈を理解し、提案・採点・フィードバック文を生成します（精度向上／データはAPIへ送信・有料）。
         </p>
+      </div>
+
+      <div class="card">
+        <h3>👤 コーチプロフィール</h3>
+        <p class="small muted" style="margin-top:-4px">ホーム画面の挨拶・フィードバックPDFに反映されます。</p>
+        <div class="row">
+          <div class="col"><label class="fld">表示名（呼びかけに使う名前）</label>
+            <input type="text" id="set-coach-display" placeholder="例：田中コーチ、Yuki、先生"></div>
+          <div class="col"><label class="fld">フルネーム / 屋号（PDF発行者名）</label>
+            <input type="text" id="set-coach-full" placeholder="例：NLPコーチ 田中由紀"></div>
+        </div>
+        <div style="text-align:right;margin-top:12px">
+          <button class="btn sm" onclick="saveCoachProfile()">💾 保存</button>
+        </div>
       </div>
 
       <div class="card">
@@ -883,6 +912,10 @@ function showEvalLoading(){
 
 /* 設定画面 */
 function renderSettings(){
+  // コーチプロフィール
+  const cd=document.getElementById('set-coach-display');if(cd)cd.value=getCoachDisplay();
+  const cf=document.getElementById('set-coach-full');if(cf)cf.value=getCoachFull();
+  // AI設定
   const k=document.getElementById('set-apikey');if(k)k.value=getApiKey();
   const m=document.getElementById('set-model');if(m)m.value=getModel();
   const o=document.getElementById('set-ai-on');if(o)o.checked=localStorage.getItem('nlp_ai_on')==='1';
@@ -1350,7 +1383,7 @@ function saveEval(a,fname){
 }
 
 /* ===================== フィードバックPDF（印刷ベース） ===================== */
-function getCoach(){return localStorage.getItem('nlp_coach')||"";}
+function getCoach(){return getCoachFull();}
 function syncCoach(){const el=document.getElementById('coach-name');if(el)localStorage.setItem('nlp_coach',el.value.trim());}
 function HIST(id){return loadHistory().find(x=>x.id===id);}
 function evalFeedbackData(){
@@ -1634,8 +1667,84 @@ function previewWork(id){
   document.getElementById('modal').classList.add('show');
 }
 
+/* ===================== コーチプロフィール ===================== */
+function getCoachDisplay(){return localStorage.getItem('nlp_coach_display')||"";}
+function getCoachFull(){return localStorage.getItem('nlp_coach_full')||localStorage.getItem('nlp_coach')||"";}
+function saveCoachProfile(){
+  const d=document.getElementById('set-coach-display').value.trim();
+  const f=document.getElementById('set-coach-full').value.trim();
+  localStorage.setItem('nlp_coach_display',d);
+  localStorage.setItem('nlp_coach_full',f);
+  if(f)localStorage.setItem('nlp_coach',f); // 既存のPDF発行者名と同期
+  toast("プロフィールを保存しました");
+  renderHome();
+}
+
+/* ===================== セッション前ヒント集 ===================== */
+const PREP_TIPS=[
+  {icon:"🌬️", msg:(n)=>`${n}、セッションを始める前に一度、深くゆっくり息を吐き切ってみましょう。\n吐いたぶんだけ新鮮な空気が入ってきます。呼吸が落ち着いたとき、あなたはもうニュートラルなポジションにいます。`},
+  {icon:"🌿", msg:(n)=>`${n}、コーチとしての「あなた」は、今この瞬間、正しい場所にいます。\n答えはクライアントの中にある——その信頼を胸に持つだけで、あなたの問いはもっと深く届きます。`},
+  {icon:"🎯", msg:(n)=>`${n}、今日のセッションで"何かを教えよう"という気持ちを、そっと脇に置いてみましょう。\n教える人ではなく、"共に探求する人"として座るとき、クライアントは自由に語れます。`},
+  {icon:"🔆", msg:(n)=>`${n}、目を閉じて自分の体の中に意識を向けてみてください。\n肩、首、顎——少し力が入っていませんか？ ゆっくり解いて。その感覚が"コーチとしての身体"です。`},
+  {icon:"🤝", msg:(n)=>`${n}、ラポールはまず自分自身との信頼から始まります。\n「今日の自分はこれで十分だ」と一度認めてみましょう。その安心感が、そのままクライアントへの温かさになります。`},
+  {icon:"💡", msg:(n)=>`${n}、「もしクライアントが最善を尽くしているとしたら、どう関わるだろう？」\nこの問いを胸に持つだけで、批判の目が好奇心の目に変わります。`},
+  {icon:"🌊", msg:(n)=>`${n}、今日のセッションに「こうすべき」という期待があるなら、そっと手放しましょう。\n川の流れに乗る小舟のように、クライアントのペースに寄り添うと、思わぬ深みにたどり着くことがあります。`},
+  {icon:"⭕", msg:(n)=>`${n}、今のあなたが最も力を発揮できた瞬間を一つ思い出してください。\nその感覚を胸に取り込み、それを持ったままセッションの場に立ちましょう。あなたのリソースはすでにここにあります。`},
+  {icon:"🪞", msg:(n)=>`${n}、コーチングの場はクライアントのための鏡です。\n鏡は主張しない。ただ映す。その静けさの中に、クライアントは自分の答えを見つけます。`},
+  {icon:"🌱", msg:(n)=>`${n}、「失敗はなく、フィードバックがある」——この言葉は、クライアントだけでなくあなた自身へのものでもあります。\n今日のセッションがどんな結果でも、それはあなたの次の成長の種です。`},
+  {icon:"🧭", msg:(n)=>`${n}、今日の自分の状態を1〜10で点数にするとしたら、いくつですか？\n数字に良し悪しはありません。"今の状態を知っている"だけで、あなたはすでに自分の内側を観察できるコーチです。`},
+  {icon:"✨", msg:(n)=>`${n}、クライアントは今日、あなたに会いに来ます。\n技法を完璧に使おうとするより、「この人のことをちゃんと聞こう」というシンプルな意図のほうが、深いラポールを生みます。`},
+  {icon:"🕊️", msg:(n)=>`${n}、セッション前に「今日、このクライアントの肯定的な意図は何だろう？」と一度想像してみましょう。\nその視点で向き合うとき、あなたの言葉は自然と受容的になります。`},
+  {icon:"🏔️", msg:(n)=>`${n}、深い質問は静けさの中から生まれます。\n次の一言を急がず、クライアントの言葉の"余韻"に少し留まってみましょう。沈黙も、立派なコーチングです。`},
+  {icon:"🔓", msg:(n)=>`${n}、今日もセッションに臨む前に、自分へのエコロジーチェックを。\n今の体、心、エネルギー——どれかに無理がありませんか？ 整っているあなたが、クライアントにとっての最大のリソースです。`},
+];
+let _tipIdx=-1;
+function getTip(forceNext){
+  const n=getCoachDisplay()||"コーチ";
+  if(forceNext||_tipIdx<0){
+    // 初回は日付ベースで選ぶ、以降は手動でrotate
+    const today=new Date();
+    const base=(today.getFullYear()*1000+today.getMonth()*31+today.getDate())%PREP_TIPS.length;
+    if(_tipIdx<0)_tipIdx=base;
+    else _tipIdx=(_tipIdx+1)%PREP_TIPS.length;
+  }
+  return PREP_TIPS[_tipIdx];
+}
+function rotateTip(){
+  const t=getTip(true);
+  const mi=document.getElementById('home-prep-icon');const mm=document.getElementById('home-prep-msg');
+  if(mi)mi.textContent=t.icon;
+  if(mm){mm.style.opacity='0';mm.textContent=t.msg(getCoachDisplay()||"コーチ");
+    requestAnimationFrame(()=>{mm.style.transition='opacity .35s';mm.style.opacity='1';});}
+}
+
 /* ===================== ホーム ===================== */
+function greetingWord(){
+  const h=new Date().getHours();
+  if(h<11)return"おはようございます";
+  if(h<17)return"こんにちは";
+  return"お疲れさまです";
+}
 function renderHome(){
+  // 挨拶
+  const name=getCoachDisplay();
+  const greeting=document.getElementById('home-greeting');
+  const sub=document.getElementById('home-sub');
+  if(greeting){
+    greeting.textContent=name
+      ?`${greetingWord()}、${name} 👋`
+      :`${greetingWord()}、コーチ 👋`;
+  }
+  if(sub&&name){
+    sub.textContent=`今日も${name}らしいセッションで、クライアントの力を引き出しましょう。`;
+  }
+  // セッション前ヒント（初回のみ日付ベース選択）
+  const t=getTip(false);
+  const mi=document.getElementById('home-prep-icon');const mm=document.getElementById('home-prep-msg');
+  if(mi)mi.textContent=t.icon;
+  if(mm)mm.textContent=t.msg(name||"コーチ");
+
+  // 実績
   const h=loadHistory();
   document.getElementById('stat-sessions').textContent=h.length;
   document.getElementById('stat-clients').textContent=new Set(h.map(x=>x.name)).size;
