@@ -1006,6 +1006,13 @@ function resetSession(){
 }
 
 /* ===================== 課題リスト ===================== */
+const CHALLENGE_EXAMPLES=[
+  "人前で話すと緊張して頭が真っ白になる",
+  "やるべきことを先延ばしにしてしまう",
+  "上司との関係がうまくいかずストレスを感じる",
+  "自分に自信が持てず、一歩踏み出せない",
+  "将来の方向性が定まらず、もやもやしている",
+];
 function renderChallenges(){
   const box=document.getElementById('h-challenges');if(!box)return;box.innerHTML="";
   session.challenges.forEach((c,i)=>{
@@ -1016,7 +1023,7 @@ function renderChallenges(){
     row.innerHTML=
       `<input type="radio" name="chsel" ${on?'checked':''} onchange="selectChallenge(${i})" style="accent-color:var(--brand);width:18px;height:18px;flex-shrink:0;cursor:pointer" title="この課題を今回扱う">
        <span class="muted tiny" style="width:16px;text-align:right;flex-shrink:0">${i+1}</span>
-       <input type="text" value="${esc(c)}" placeholder="課題 ${i+1}（例：朝の準備に時間がかかりすぎる）" oninput="session.challenges[${i}]=this.value;updateSelLabel()"
+       <input type="text" value="${esc(c)}" placeholder="課題 ${i+1}（例：${CHALLENGE_EXAMPLES[i%CHALLENGE_EXAMPLES.length]}）" oninput="session.challenges[${i}]=this.value;updateSelLabel()"
          style="flex:1;border:1.5px solid ${on?'var(--brand)':'var(--line)'};border-radius:10px;padding:9px 12px;font-size:14px;background:${on?'#fff':'#fbfdfc'}">
        ${done?'<span class="pill" style="flex-shrink:0">✓ 実施済</span>':''}
        ${session.challenges.length>1?`<button class="btn gray sm" onclick="removeChallenge(${i})" title="削除" style="flex-shrink:0;padding:6px 10px">✕</button>`:''}`;
