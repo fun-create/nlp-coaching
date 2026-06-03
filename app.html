@@ -475,11 +475,13 @@
       <div class="page-h"><h2>📚 NLPガイド</h2><p>NLPの前提・コーチの心構えと、主要なワーク一覧です。</p></div>
       <!-- タブ -->
       <div id="lib-tabs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-        <button class="lib-tab btn" data-tab="presup" onclick="switchLibTab('presup')">🌱 NLPの前提</button>
+        <button class="lib-tab btn" data-tab="usage" onclick="switchLibTab('usage')">📖 アプリの使い方</button>
+        <button class="lib-tab btn ghost" data-tab="presup" onclick="switchLibTab('presup')">🌱 NLPの前提</button>
         <button class="lib-tab btn ghost" data-tab="mindset" onclick="switchLibTab('mindset')">🧭 コーチの心構え</button>
         <button class="lib-tab btn ghost" data-tab="works" onclick="switchLibTab('works')">⚡ ワーク一覧</button>
       </div>
-      <div id="lib-presup"></div>
+      <div id="lib-usage"></div>
+      <div id="lib-presup" style="display:none"></div>
       <div id="lib-mindset" style="display:none"></div>
       <div id="lib-works" style="display:none"><div class="rec" id="lib-list"></div></div>
     </section>
@@ -1045,7 +1047,7 @@ function go(view){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   if(view==='home')renderHome();
   if(view==='history')renderHistory();
-  if(view==='library'){renderLibrary();switchLibTab(_libTab||'presup');}
+  if(view==='library'){renderLibrary();switchLibTab(_libTab||'usage');}
   if(view==='settings')renderSettings();
   if(view==='evaluate')renderEvalTranscriptBanner();
   window.scrollTo(0,0);
@@ -1772,16 +1774,88 @@ const COACH_MINDSET=[
    tip:"🛡️ 「今日の話は少し、私の専門の外かもしれません」と正直に伝えることが、最も誠実なサポートです。"},
 ];
 
-let _libTab='presup';
+let _libTab='usage';
 function switchLibTab(tab){
   _libTab=tab;
-  ['presup','mindset','works'].forEach(t=>{
+  ['usage','presup','mindset','works'].forEach(t=>{
     document.getElementById('lib-'+t).style.display=t===tab?'block':'none';
   });
   document.querySelectorAll('.lib-tab').forEach(b=>{
     const on=b.dataset.tab===tab;
     b.className='lib-tab btn'+(on?'':' ghost');
   });
+}
+
+function renderUsage(){
+  const box=document.getElementById('lib-usage');if(!box)return;
+  box.innerHTML=
+    `<div class="card" style="background:linear-gradient(135deg,#f0f7f5 0%,#e8f1fb 100%);border-color:#cfe7e1;margin-bottom:18px">
+       <h3 style="margin-bottom:6px">📖 このアプリの使い方</h3>
+       <p class="small" style="margin:0">NLPコーチングのセッションを、ヒアリングから評価・記録まで一気通貫でサポートします。<b>すべてのデータは端末内（ブラウザ）にのみ保存され、外部送信はAIモード使用時のみ</b>です。</p>
+     </div>
+
+     <h3 style="margin:18px 0 10px;color:var(--brand-d)">🚀 4ステップの流れ</h3>
+     <div class="presup-grid" style="margin-bottom:24px">
+       ${[
+         {n:1,icon:"🎧",title:"ヒアリング",body:"クライアント名、課題リスト（5〜10個）、課題領域、現状／望む状態、困りごとの強さ（10段階）、今日のゴールを入力。事前に受け取ったWordファイル／メールから箇条書きを自動取り込みできます。"},
+         {n:2,icon:"✨",title:"ワーク提案",body:"入力内容から相性の良いワークを3つ自動提案。AIモードONなら文脈を理解した提案、OFFならルールベース（無料・オフライン）で提案します。"},
+         {n:3,icon:"🧭",title:"進行ガイド",body:"選んだワークの台本（声かけ例）と観察ポイントを見ながら、リアルタイムで進行。チェックリスト・タイマーつき。ヒアリング〜ガイド中は録音と自動文字起こしも可能。"},
+         {n:4,icon:"📊",title:"評価・記録",body:"ワーク後の会話データ（テキスト／録音文字起こし）から、傾聴・気づき・行動化など6つの視点で評価。履歴に保存し、クライアント向け／コーチ向けPDFを出力できます。"},
+       ].map(s=>`
+         <div class="presup-card">
+           <div class="pc-icon">${s.icon}</div>
+           <div class="pc-num">STEP ${s.n}</div>
+           <div class="pc-title">${esc(s.title)}</div>
+           <div class="pc-body">${esc(s.body)}</div>
+         </div>`).join('')}
+     </div>
+
+     <h3 style="margin:18px 0 10px;color:var(--brand-d)">🎯 主な機能</h3>
+     <div class="mindset-grid" style="margin-bottom:24px">
+       ${[
+         {label:"録音",title:"🎙 セッション録音＋自動文字起こし",body:"ヒアリング・進行ガイドのページに表示される録音バーから、画面下に常駐するレコーダーを起動。Chrome／Edgeなら会話をリアルタイムでテキスト化し、評価ステップに自動で渡せます。録音は端末内（IndexedDB）にのみ保存。",tip:"クライアントの同意を得てから録音を開始してください。"},
+         {label:"AI",title:"✨ AIモード（Claude API・任意）",body:"設定画面でAPIキーを登録しONにすると、提案・評価・フィードバック文がClaudeによる文脈理解ベースになります。OFFのときはすべてルールベース（無料・外部送信なし）で動作。",tip:"AIモードON時のみ会話テキスト・課題内容がAnthropicへ送信されます。"},
+         {label:"履歴",title:"🗂️ 履歴と PDF",body:"履歴画面で過去のセッション一覧を確認。録音再生・文字起こし表示・PDF再出力・残りの課題の引き継ぎが可能。",tip:"履歴とコーチプロフィールは「⬇書き出し」「⬆読み込み」で他端末へ移行できます。"},
+         {label:"配布",title:"📥 配布資料のダウンロード",body:"ホーム画面の「クライアント向け配布資料」セクションから、事前ワークシート（Word）／案内メール文面／NLPワークシート（Excel）／ガイドブック（PDF）をダウンロード・コピーできます。",tip:"事前ワークの記入済みWord・メール本文は、ヒアリングページから自動で課題リストに取り込めます。"},
+         {label:"プロフィール",title:"👤 コーチプロフィール",body:"設定画面の「コーチプロフィール」で表示名・フルネームを登録すると、ホーム画面の挨拶・PDFの発行者名に反映されます。",tip:"表示名は呼びかけ（例：Yuki）、フルネームはPDFの署名に使われます。"},
+         {label:"バックアップ",title:"💾 データのバックアップ",body:"左メニュー下部の「⬇書き出し／⬆読み込み」でJSON形式のバックアップが取れます。録音音声は含まれない点にご注意ください。",tip:"端末を変える際はJSONをエクスポート→新端末でインポート。"},
+       ].map(m=>`
+         <div class="mindset-card">
+           <div class="mc-label">${esc(m.label)}</div>
+           <div class="mc-title">${esc(m.title)}</div>
+           <div class="mc-body">${esc(m.body)}</div>
+           ${m.tip?`<div class="mc-tip">${esc(m.tip)}</div>`:''}
+         </div>`).join('')}
+     </div>
+
+     <h3 style="margin:18px 0 10px;color:var(--brand-d)">💡 よくある質問</h3>
+     <div class="card" style="margin-bottom:14px">
+       <details style="margin-bottom:10px">
+         <summary style="cursor:pointer;font-weight:700;color:var(--brand-d);padding:6px 0">Q. データは安全ですか？</summary>
+         <p class="small" style="margin:6px 0 0 16px;color:var(--ink)">A. 履歴・録音音声・APIキーなど、すべてのデータはお使いの端末のブラウザ内にのみ保存されます。AIモードをONにしている場合のみ、推論時に会話テキストがAnthropic（Claude API）へ送信されます。クライアントの同意と所属機関の規約をご確認のうえご利用ください。</p>
+       </details>
+       <details style="margin-bottom:10px">
+         <summary style="cursor:pointer;font-weight:700;color:var(--brand-d);padding:6px 0">Q. 録音が動作しません</summary>
+         <p class="small" style="margin:6px 0 0 16px;color:var(--ink)">A. ブラウザのマイク使用許可をご確認ください。自動文字起こしはChrome／Edge推奨です。Safariなどは録音のみ可能（文字起こし非対応）。</p>
+       </details>
+       <details style="margin-bottom:10px">
+         <summary style="cursor:pointer;font-weight:700;color:var(--brand-d);padding:6px 0">Q. クライアントが書いてくれたWordをどうやって反映しますか？</summary>
+         <p class="small" style="margin:6px 0 0 16px;color:var(--ink)">A. ヒアリング画面の課題リスト上部「📥 事前準備から読み込み」から「📄 Wordファイル」を選び、クライアントから受け取ったdocxをアップロードしてください。テーブル内の課題が自動的に箇条書きとしてリストに展開されます。メールで返信が来た場合は「📋 テキスト貼り付け」から本文を貼り付けてください。</p>
+       </details>
+       <details style="margin-bottom:10px">
+         <summary style="cursor:pointer;font-weight:700;color:var(--brand-d);padding:6px 0">Q. 別の端末でも使いたい</summary>
+         <p class="small" style="margin:6px 0 0 16px;color:var(--ink)">A. このアプリはWebアプリです。同じURLを別端末で開くだけで使えます。履歴やプロフィールを移したい場合は、左メニュー下の「⬇書き出し」でJSONを出力し、新端末で「⬆読み込み」してください。AIモードのAPIキーは端末ごとに再入力が必要です。</p>
+       </details>
+       <details>
+         <summary style="cursor:pointer;font-weight:700;color:var(--brand-d);padding:6px 0">Q. 提案・評価をルールベースとAIで切り替えたい</summary>
+         <p class="small" style="margin:6px 0 0 16px;color:var(--ink)">A. 設定画面の「AIモード」のON／OFFで瞬時に切り替えられます。OFF時はすべてルールベース（無料・オフライン・データ外部送信なし）で動作します。</p>
+       </details>
+     </div>
+
+     <div class="card" style="background:var(--warn-l);border-color:#f0e0c0">
+       <h3 style="margin-bottom:6px;color:var(--warn)">⚠️ ご注意</h3>
+       <p class="small" style="margin:0">NLPコーチングは医療・心理療法の代替ではありません。クライアントの安全と尊厳を最優先し、強いトラウマ・うつ・依存など臨床的な課題はその領域の専門家へつないでください。録音は必ずクライアントの同意のもとで行ってください。</p>
+     </div>`;
 }
 
 function renderPresup(){
@@ -1820,7 +1894,7 @@ function renderMindset(){
 }
 
 function renderLibrary(){
-  renderPresup();renderMindset();
+  renderUsage();renderPresup();renderMindset();
   const box=document.getElementById('lib-list');box.innerHTML="";
   WORKS.forEach(w=>{
     const el=document.createElement('div');el.className="wk";
