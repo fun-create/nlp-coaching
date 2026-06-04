@@ -317,12 +317,23 @@
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
               <span style="font-size:28px">📗</span>
               <div>
-                <div style="font-weight:700;color:var(--brand-d)">NLPワークシート（Excel）</div>
-                <div class="tiny muted">代表システム ＋ 望むこと100個</div>
+                <div style="font-weight:700;color:var(--brand-d)">代表システム優先度テスト（Excel）</div>
+                <div class="tiny muted">V/A/K/Ad の優位感覚を診断</div>
               </div>
             </div>
-            <p class="small muted" style="margin:6px 0 12px;flex:1">代表システム診断・バランス車輪・テーマ別の望みリスト・100個リストが1つにまとまったExcelです。</p>
-            <button class="btn sm" style="width:100%" onclick="downloadWorksheet()">⬇ ダウンロード</button>
+            <p class="small muted" style="margin:6px 0 12px;flex:1">クライアントの代表システム（視覚・聴覚・身体感覚・内部対話）の優先度を自己評価で診断するExcelです。</p>
+            <button class="btn sm" style="width:100%" onclick="downloadRepSystemTest()">⬇ ダウンロード</button>
+          </div>
+          <div style="border:1.5px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="font-size:28px">📘</span>
+              <div>
+                <div style="font-weight:700;color:var(--brand-d)">望むこと100個（Excel）</div>
+                <div class="tiny muted">バランス車輪 ＋ 100個リスト</div>
+              </div>
+            </div>
+            <p class="small muted" style="margin:6px 0 12px;flex:1">人生のバランス車輪で現状を可視化し、テーマ別に望む状態を書き出して100個リストにまとめるExcelです。</p>
+            <button class="btn sm" style="width:100%" onclick="download100Wishes()">⬇ ダウンロード</button>
           </div>
           <div style="border:1.5px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;display:flex;flex-direction:column">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -1816,7 +1827,7 @@ function renderUsage(){
          {label:"録音",title:"🎙 セッション録音＋自動文字起こし",body:"ヒアリング・進行ガイドのページに表示される録音バーから、画面下に常駐するレコーダーを起動。Chrome／Edgeなら会話をリアルタイムでテキスト化し、評価ステップに自動で渡せます。録音は端末内（IndexedDB）にのみ保存。",tip:"クライアントの同意を得てから録音を開始してください。"},
          {label:"AI",title:"✨ AIモード（Claude API・任意）",body:"設定画面でAPIキーを登録しONにすると、提案・評価・フィードバック文がClaudeによる文脈理解ベースになります。OFFのときはすべてルールベース（無料・外部送信なし）で動作。",tip:"AIモードON時のみ会話テキスト・課題内容がAnthropicへ送信されます。"},
          {label:"履歴",title:"🗂️ 履歴と PDF",body:"履歴画面で過去のセッション一覧を確認。録音再生・文字起こし表示・PDF再出力・残りの課題の引き継ぎが可能。",tip:"履歴とコーチプロフィールは「⬇書き出し」「⬆読み込み」で他端末へ移行できます。"},
-         {label:"配布",title:"📥 配布資料のダウンロード",body:"ホーム画面の「クライアント向け配布資料」セクションから、事前ワークシート（Word）／案内メール文面／NLPワークシート（Excel）／ガイドブック（PDF）をダウンロード・コピーできます。",tip:"事前ワークの記入済みWord・メール本文は、ヒアリングページから自動で課題リストに取り込めます。"},
+         {label:"配布",title:"📥 配布資料のダウンロード",body:"ホーム画面の「クライアント向け配布資料」セクションから、事前ワークシート（Word）／案内メール文面／代表システム優先度テスト（Excel）／望むこと100個（Excel）／ガイドブック（PDF）をダウンロード・コピーできます。",tip:"事前ワークの記入済みWord・メール本文は、ヒアリングページから自動で課題リストに取り込めます。"},
          {label:"プロフィール",title:"👤 コーチプロフィール",body:"設定画面の「コーチプロフィール」で表示名・フルネームを登録すると、ホーム画面の挨拶・PDFの発行者名に反映されます。",tip:"表示名は呼びかけ（例：Yuki）、フルネームはPDFの署名に使われます。"},
          {label:"バックアップ",title:"💾 データのバックアップ",body:"左メニュー下部の「⬇書き出し／⬆読み込み」でJSON形式のバックアップが取れます。録音音声は含まれない点にご注意ください。",tip:"端末を変える際はJSONをエクスポート→新端末でインポート。"},
        ].map(m=>`
@@ -2024,7 +2035,8 @@ function renderHome(){
 }
 
 /* ===================== 配布資料ダウンロード ===================== */
-function downloadWorksheet(){downloadAsset('nlp_worksheet.xlsx','NLPワークシート.xlsx');}
+function downloadRepSystemTest(){downloadAsset('nlp_representation_system_test.xlsx','NLP_代表システム優先度テスト.xlsx');}
+function download100Wishes(){downloadAsset('nlp_100wishes.xlsx','NLPコーチング_望むこと100個.xlsx');}
 function downloadGuidebook(){downloadAsset('guidebook.pdf','NLPコーチング_ガイドブック.pdf');}
 function downloadPreworkDoc(){downloadAsset('nlp_prework_sheet.docx','NLPコーチング_事前ワークシート.docx');}
 function downloadPreworkEmail(){downloadAsset('nlp_prework_email.txt','NLPコーチング_事前案内メール.txt');}
