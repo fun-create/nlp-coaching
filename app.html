@@ -517,8 +517,11 @@
           <b class="small">📥 ファイルの保存場所</b>
           <p class="small" style="margin:6px 0 0">Macの「<b>ダウンロード</b>」フォルダに <code style="background:#fff;padding:2px 6px;border-radius:4px">nlp_coaching_autobackup_<i>日時</i>.json</code> という名前で保存されます。古いファイルは時々まとめて整理してください。</p>
         </div>
-        <label class="toggle"><input type="checkbox" id="set-auto-backup"> <b>セッション保存時に自動バックアップする</b>（推奨：ON）</label>
-        <div id="set-last-backup" class="tiny muted" style="margin-top:10px"></div>
+        <label class="toggle"><input type="checkbox" id="set-auto-backup"> <b>セッション保存時に履歴JSONを自動バックアップする</b>（推奨：ON）</label>
+        <div style="height:10px"></div>
+        <label class="toggle"><input type="checkbox" id="set-fb-backup"> <b>フィードバックPDF出力時にHTMLファイルも自動保存する</b>（推奨：ON）</label>
+        <p class="tiny muted" style="margin:6px 0 0 30px">クライアント向け／コーチ向けフィードバックを開くと、Downloadsに <code style="background:#fff;padding:2px 5px;border-radius:3px">NLP_クライアント向けフィードバック_◯◯_日時.html</code> として自動保存されます。後からブラウザで開けば再印刷／PDF化が可能です。</p>
+        <div id="set-last-backup" class="tiny muted" style="margin-top:14px"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
           <button class="btn sm" onclick="saveAutoBackupSetting()">💾 設定を保存</button>
           <button class="btn ghost sm" onclick="manualBackupNow()">📥 今すぐバックアップする</button>
@@ -1027,6 +1030,7 @@ function renderSettings(){
   const cf=document.getElementById('set-coach-full');if(cf)cf.value=getCoachFull();
   // 自動バックアップ
   const ab=document.getElementById('set-auto-backup');if(ab)ab.checked=getAutoBackup();
+  const fb=document.getElementById('set-fb-backup');if(fb)fb.checked=getFeedbackBackup();
   renderLastBackup();
   // AI設定
   const k=document.getElementById('set-apikey');if(k)k.value=getApiKey();
@@ -1551,7 +1555,11 @@ function manualBackupNow(){
 }
 function saveAutoBackupSetting(){
   setAutoBackup(document.getElementById('set-auto-backup').checked);
-  toast(getAutoBackup()?"✅ 自動バックアップを有効にしました":"自動バックアップをOFFにしました");
+  setFeedbackBackup(document.getElementById('set-fb-backup').checked);
+  const parts=[];
+  parts.push(getAutoBackup()?'履歴JSON: ON':'履歴JSON: OFF');
+  parts.push(getFeedbackBackup()?'フィードバックHTML: ON':'フィードバックHTML: OFF');
+  toast('✅ 保存しました（'+parts.join(' / ')+'）');
 }
 function renderLastBackup(){
   const el=document.getElementById('set-last-backup');if(!el)return;
@@ -1581,19 +1589,47 @@ function evalFeedbackData(){
 }
 function clientPDFfromEval(){const d=evalFeedbackData();if(d)clientPDF(d);}
 function coachPDFfromEval(){const d=evalFeedbackData();if(d)coachPDF(d);}
-function clientPDF(d){if(!d){toast("データがありません");return;}openPrintDoc("クライアント向けフィードバック - "+(d.name||""),clientFeedbackHTML(d));}
-function coachPDF(d){if(!d){toast("データがありません");return;}openPrintDoc("コーチ用評価レポート - "+(d.name||""),coachFeedbackHTML(d));}
+function clientPDF(d){if(!d){toast("データがありません");return;}openPrintDoc("クライアント向けフィードバック - "+(d.name||""),clientFeedbackHTML(d),'client',d);}
+function coachPDF(d){if(!d){toast("データがありません");return;}openPrintDoc("コーチ用評価レポート - "+(d.name||""),coachFeedbackHTML(d),'coach',d);}
 function fbColor(v){return v>=75?'#2f8f7f':v>=50?'#c98a2b':'#c2553f';}
 
-function openPrintDoc(title,inner){
-  syncCoach();
-  const w=window.open('','_blank','width=880,height=920');
-  if(!w){toast("ポップアップを許可するとPDFを作成できます");return;}
-  w.document.write('<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>'+title+
+/* ===================== HTML自動保存 ===================== */
+function buildFeedbackHTML(title,inner){
+  return '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>'+title+
     '</title><style>'+PRINT_CSS+'</style></head><body>'+
     '<div class="toolbar no-print"><button onclick="window.print()">🖨 印刷 / PDFとして保存</button>'+
     '<span>印刷ダイアログの「送信先」で「PDFに保存」を選ぶとPDFになります</span></div>'+
-    inner+'</body></html>');
+    inner+'</body></html>';
+}
+function getFeedbackBackup(){return localStorage.getItem('nlp_fb_backup')!=='0';}  // デフォルトON
+function setFeedbackBackup(on){localStorage.setItem('nlp_fb_backup',on?'1':'0');}
+function _feedbackFilename(kind,d){
+  const t=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  const stamp=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}_${p(t.getHours())}${p(t.getMinutes())}`;
+  const safeName=(d.name||'(無名)').replace(/[\/\\:*?"<>|]/g,'_');
+  const label=kind==='client'?'クライアント向けフィードバック':'コーチ用評価レポート';
+  return `NLP_${label}_${safeName}_${stamp}.html`;
+}
+function autoSaveFeedbackHTML(html,kind,d){
+  if(!getFeedbackBackup())return;
+  try{
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=_feedbackFilename(kind,d);
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  }catch(e){console.warn('HTML auto-save failed',e);}
+}
+function openPrintDoc(title,inner,kind,d){
+  syncCoach();
+  const html=buildFeedbackHTML(title,inner);
+  // 印刷ウィンドウを開く前にHTMLを自動保存（バックアップ）
+  if(kind&&d)autoSaveFeedbackHTML(html,kind,d);
+  const w=window.open('','_blank','width=880,height=920');
+  if(!w){toast("ポップアップを許可するとPDFを作成できます。HTMLはDownloadsに保存されています。");return;}
+  w.document.write(html);
   w.document.close();
 }
 
@@ -1947,7 +1983,7 @@ function renderUsage(){
          {label:"履歴",title:"🗂️ 履歴と PDF",body:"履歴画面で過去のセッション一覧を確認。録音再生・文字起こし表示・PDF再出力・残りの課題の引き継ぎが可能。",tip:"履歴とコーチプロフィールは「⬇書き出し」「⬆読み込み」で他端末へ移行できます。"},
          {label:"配布",title:"📥 配布資料のダウンロード",body:"ホーム画面の「クライアント向け配布資料」セクションから、事前ワークシート（Word）／案内メール文面／代表システム優先度テスト（Excel）／望むこと100個（Excel）／ガイドブック（PDF）をダウンロード・コピーできます。",tip:"事前ワークの記入済みWord・メール本文は、ヒアリングページから自動で課題リストに取り込めます。"},
          {label:"プロフィール",title:"👤 コーチプロフィール",body:"設定画面の「コーチプロフィール」で表示名・フルネームを登録すると、ホーム画面の挨拶・PDFの発行者名に反映されます。",tip:"表示名は呼びかけ（例：Yuki）、フルネームはPDFの署名に使われます。"},
-         {label:"バックアップ",title:"💾 自動バックアップ＆データ移行",body:"セッション保存時にJSONを自動でダウンロード（デフォルトON）。設定画面と履歴画面に「📥 今すぐバックアップ」ボタン、左メニュー下部に「⬇書き出し／⬆読み込み」もあります。録音音声は含まれない点にご注意ください。",tip:"古いバックアップJSONはDownloadsフォルダに溜まるので、月に1回程度まとめて整理を。"},
+         {label:"バックアップ",title:"💾 自動バックアップ＆データ移行",body:"セッション保存時に履歴JSONを、PDF出力時にフィードバックHTMLを、それぞれ自動でDownloadsへ保存します（両方デフォルトON）。HTMLはブラウザで開いて再印刷／PDF化が可能。設定画面と履歴画面に「📥 今すぐバックアップ」、左メニュー下部に「⬇書き出し／⬆読み込み」もあります。録音音声は含まれない点にご注意ください。",tip:"古いバックアップはDownloadsに溜まるので、月1回程度まとめて整理を。"},
        ].map(m=>`
          <div class="mindset-card">
            <div class="mc-label">${esc(m.label)}</div>
