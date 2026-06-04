@@ -1349,12 +1349,13 @@ function readFile(f){
 function evaluateText(raw,fname){
   if(!raw||raw.trim().length<20){toast("会話データが短すぎます。もう少し長いテキストをご用意ください");return;}
   const w=session.workId?WMAP[session.workId]:null;
+  const vak=analyzeVAK(raw); // ルールベースVAK分析（AI/ルール両モード共通で実施）
   if(aiOn()){
     showEvalLoading();
-    aiEvaluate(raw,w).then(a=>renderEvalResult(a,fname,w))
-      .catch(e=>{toast("AI評価に失敗（"+(e.message||"").slice(0,50)+"）。ルールベースで評価します");renderEvalResult(analyzeConversation(raw,w),fname,w);});
+    aiEvaluate(raw,w).then(a=>{a.vak=vak;renderEvalResult(a,fname,w);})
+      .catch(e=>{toast("AI評価に失敗（"+(e.message||"").slice(0,50)+"）。ルールベースで評価します");const a=analyzeConversation(raw,w);a.vak=vak;renderEvalResult(a,fname,w);});
   }else{
-    renderEvalResult(analyzeConversation(raw,w),fname,w);
+    const a=analyzeConversation(raw,w);a.vak=vak;renderEvalResult(a,fname,w);
   }
 }
 
@@ -1427,6 +1428,110 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function sat(c,base,per,cap){return Math.round(clamp(base+c*per,base,cap));}
 function plateau(v,lo,hi,soft){if(v>=lo&&v<=hi)return 95;const d=v<lo?lo-v:v-hi;return Math.round(clamp(95-d*soft,20,95));}
 
+/* ===================== VAK 代表システム分析（ルールベース） ===================== */
+const VAK_KEYWORDS={
+  V:["見える","見え","見せ","見て","映像","イメージ","浮かぶ","浮かん","明るい","明るく","暗い","クリア","鮮明","鮮やか","カラフル","色","光","光景","景色","風景","展望","焦点","フォーカス","ビジョン","絵","描く","描い","ぼんやり","はっきり","姿","形","眺め","視点","視野","見渡","輝","透明","映る","映って","映し","ピクチャー","白黒"],
+  A:["聞こえ","聞い","聞く","聴","耳","響く","響き","響い","音","静か","うるさい","騒","声","話す","話し","言う","言って","言われ","調子","リズム","テンポ","メロディ","音楽","ハーモニー","雑音","音色","口調","叫","囁","沈黙","しっくり","耳に","ささやき","ガヤガヤ","ザワザワ","音が"],
+  K:["感じ","感覚","掴む","掴ん","握","触れ","触る","重い","軽い","温かい","温か","冷たい","熱い","涼しい","柔らか","硬い","スムーズ","緊張","リラックス","ストレス","プレッシャー","ふわっと","ぐっと","ぎゅっと","じんわり","ジーン","心地","痛","苦しい","楽な","楽に","落ち着","焦","疲れ","元気","力","押される","引っ張","動く","動かす","身体","体が","胸が","肩が","お腹","背中","震え","じっと","ほっと","じわじわ","胸の","胸に"],
+  Ad:["考え","考える","思考","分析","理解","意味","理由","なぜなら","だから","つまり","要する","結論","データ","情報","論理","理屈","原因","結果","プロセス","構造","体系","理論","概念","定義","検討","確認","整理","判断","評価","見直し","考察","問題","解決","ステップ","手順","方法","戦略","プラン","計画","つまり","要するに","具体的","抽象","ロジック"],
+};
+const VAK_LABEL={V:"V（視覚型）",A:"A（聴覚型）",K:"K（身体感覚型）",Ad:"Ad（内部対話型）"};
+const VAK_ICON={V:"👁️",A:"👂",K:"🤲",Ad:"💭"};
+const VAK_COLOR={V:"#2f8f7f",A:"#6b6ad6",K:"#c98a2b",Ad:"#226b5f"};
+const VAK_ADVICE={
+  V:"視覚言語で合わせるとラポールが深まります。『どんな景色／イメージが見えますか？』『明るく描けていますか？』『鮮明になってきましたか？』など、視覚的な問いを意識的に使ってみましょう。",
+  A:"聴覚言語で合わせるとラポールが深まります。『どう聞こえますか？』『しっくり響いていますか？』『内側でどんな声がしますか？』など、音や言葉の質感を意識した問いを使ってみましょう。",
+  K:"身体感覚言語で合わせるとラポールが深まります。『どんな感じがしますか？』『身体のどこで感じていますか？』『重さ／軽さ／温かさはどう変わりますか？』など、感覚に触れる問いを使ってみましょう。",
+  Ad:"論理・分析言語で合わせるとラポールが深まります。『整理してみるとどうなりますか？』『その理由はどこにありますか？』『3つに分けるとしたら？』など、構造化された問いを使ってみましょう。",
+};
+function extractClientText(raw){
+  const lines=(raw||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const clientRe=/^(クライアント|client|cl|お客様|相談者|相手)\s*[:：]/i;
+  const coachRe=/^(コーチ|coach|c|カウンセラー|セラピスト|私)\s*[:：]/i;
+  let curIsClient=false, hasLabel=false;
+  const out=[];
+  for(const l of lines){
+    if(clientRe.test(l)){hasLabel=true;curIsClient=true;out.push(l.replace(clientRe,'').trim());}
+    else if(coachRe.test(l)){hasLabel=true;curIsClient=false;}
+    else if(curIsClient){out.push(l);}
+  }
+  return {text:hasLabel?out.join(' '):raw, hasLabel};
+}
+function analyzeVAK(rawText){
+  const {text:clientText, hasLabel}=extractClientText(rawText);
+  const cnt={V:0,A:0,K:0,Ad:0};
+  Object.entries(VAK_KEYWORDS).forEach(([t,words])=>{
+    words.forEach(w=>{
+      const re=new RegExp(esc4re(w),'g');
+      const m=clientText.match(re);
+      if(m)cnt[t]+=m.length;
+    });
+  });
+  const total=cnt.V+cnt.A+cnt.K+cnt.Ad;
+  const pct={V:0,A:0,K:0,Ad:0};
+  if(total>0){
+    // 比率は整数化＋合計100%になるよう微調整
+    const raw={V:cnt.V/total*100,A:cnt.A/total*100,K:cnt.K/total*100,Ad:cnt.Ad/total*100};
+    Object.keys(raw).forEach(k=>pct[k]=Math.round(raw[k]));
+    const diff=100-(pct.V+pct.A+pct.K+pct.Ad);
+    if(diff!==0){
+      let topK='V', topV=-1;
+      Object.entries(pct).forEach(([k,v])=>{if(v>topV){topV=v;topK=k;}});
+      pct[topK]+=diff;
+    }
+  }
+  let top=null;
+  if(total>0){let topV=-1;Object.entries(cnt).forEach(([k,v])=>{if(v>topV){topV=v;top=k;}});}
+  return {counts:cnt, percentages:pct, total, top, hasLabel, sampleLength:clientText.length};
+}
+
+/* VAK表示用HTML（評価画面・履歴用） */
+function renderVAKHTML(vak){
+  if(!vak||!vak.total){
+    return `<div class="card" style="background:#f4f7f6;border:1px dashed var(--line)"><p class="small muted" style="margin:0">🧠 代表システム分析：会話に分析できる述語が十分に含まれていません。</p></div>`;
+  }
+  const bars=['V','A','K','Ad'].map(k=>{
+    const pct=vak.percentages[k];
+    const cnt=vak.counts[k];
+    return `<div style="margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <b>${VAK_ICON[k]} ${VAK_LABEL[k]}</b>
+        <span style="color:${VAK_COLOR[k]};font-weight:700">${pct}% <span class="tiny muted">(${cnt}語)</span></span>
+      </div>
+      <div class="bar" style="height:9px;background:#eef2f1;border-radius:99px;overflow:hidden"><i style="display:block;height:100%;background:${VAK_COLOR[k]};width:${pct}%"></i></div>
+    </div>`;
+  }).join('');
+  const top=vak.top;
+  const topInfo=top?`<div style="margin-top:14px;padding:12px 14px;background:var(--brand-l);border-radius:10px">
+    <div style="font-size:13px;font-weight:700;color:var(--brand-d)">🏆 最優位タイプ：${VAK_ICON[top]} ${VAK_LABEL[top]}</div>
+    <div class="small" style="margin-top:6px">${VAK_ADVICE[top]}</div>
+  </div>`:'';
+  const note=vak.hasLabel?'':`<div class="tiny muted" style="margin-top:8px">⚠️ 「コーチ:」「クライアント:」ラベルが検出されなかったため、会話全体を対象に集計しています。</div>`;
+  return `<div class="card" style="margin-top:14px">
+    <h3 style="font-size:15px;margin-bottom:4px">🧠 クライアントの代表システム傾向（VAK + Ad）</h3>
+    <p class="small muted" style="margin:0 0 10px">クライアントが使った述語からの推定。コーチが言葉を合わせる（ペーシング）参考にしてください。</p>
+    ${bars}
+    ${topInfo}
+    ${note}
+  </div>`;
+}
+
+/* VAK表示用HTML（コーチ向けPDF用） */
+function vakPdfSection(vak){
+  if(!vak||!vak.total)return '';
+  const bars=['V','A','K','Ad'].map(k=>{
+    const pct=vak.percentages[k];
+    return `<div class="metric"><div class="top"><b>${VAK_ICON[k]} ${VAK_LABEL[k]}</b><span style="color:${VAK_COLOR[k]};font-weight:700">${pct}%</span></div>`+
+      `<div class="bar"><i style="width:${pct}%;background:${VAK_COLOR[k]}"></i></div>`+
+      `<div style="font-size:11px;color:#6b7c85;margin-top:3px">出現語数: ${vak.counts[k]}</div></div>`;
+  }).join('');
+  const top=vak.top;
+  const topBox=top?`<div class="highlight" style="margin-top:12px"><b style="color:#c98a2b">🏆 最優位：${VAK_ICON[top]} ${VAK_LABEL[top]}</b><br><span style="font-size:12px">${esc(VAK_ADVICE[top])}</span></div>`:'';
+  return '<div class="sec"><h2>🧠 クライアントの代表システム傾向（VAK + Ad）</h2>'+
+    '<p style="font-size:12px;color:#4a5a62;margin:0 0 10px">クライアントが用いた述語からの推定。次回以降のペーシング・問いかけの言語選択にご活用ください。</p>'+
+    bars+topBox+'</div>';
+}
+
 function scoreColor(v){return v>=75?'var(--good)':v>=50?'var(--warn)':'var(--bad)';}
 function scoreText(v){return v>=80?'非常に良い':v>=65?'良好':v>=50?'まずまず':v>=35?'改善の余地あり':'要見直し';}
 
@@ -1459,6 +1564,7 @@ function renderEvalResult(a,fname,w){
        </div>
        <div class="divider"></div>
        ${mh}
+       ${a.vak?renderVAKHTML(a.vak):""}
        <div class="divider"></div>
        <div class="row" style="align-items:flex-end">
          <div class="col"><label class="fld">クライアント名</label><input type="text" id="ev-name" value="${esc(session.name)}" placeholder="未入力"></div>
@@ -1499,6 +1605,7 @@ function saveEval(a,fname){
     tags:session.tags.slice(), present:session.present, desired:session.desired,
     notes:session.notes, overall:a.overall, metrics:a.metrics, file:fname,
     summary:a.summary||"", clientMessage:a.clientMessage||"", ai:!!a.ai,
+    vak:a.vak||null,
     recordingId:session.recordingId||null, recordingDur:session.recordingDur||0, transcript:session.transcript||"",
   });
   saveHistory(h);
@@ -1585,7 +1692,8 @@ function evalFeedbackData(){
     date:session.date||todayStr(),workId,workName:workId?WMAP[workId].name:"指定なし",
     challenge:selChallengeText(),sessionGoal:session.sessionGoal,challenges:session.challenges.filter(c=>c.trim()),
     present:session.present,desired:session.desired,tags:session.tags,notes:session.notes,
-    overall:a.overall,metrics:a.metrics,summary:a.summary||"",clientMessage:a.clientMessage||"",ai:!!a.ai};
+    overall:a.overall,metrics:a.metrics,summary:a.summary||"",clientMessage:a.clientMessage||"",ai:!!a.ai,
+    vak:a.vak||null};
 }
 function clientPDFfromEval(){const d=evalFeedbackData();if(d)clientPDF(d);}
 function coachPDFfromEval(){const d=evalFeedbackData();if(d)coachPDF(d);}
@@ -1711,6 +1819,7 @@ function coachFeedbackHTML(d){
        '<div><div style="font-weight:700;color:'+oc+';font-size:16px">'+scoreText(d.overall)+'</div>'+
        '<div style="font-size:12px;color:#4a5a62;margin-top:4px">'+esc(d.summary||overallComment(d.overall))+'</div></div></div></div>'+
    '<div class="sec"><h2>項目別の所見</h2>'+metricsHTML+'</div>'+
+   vakPdfSection(d.vak)+
    (actions?'<div class="sec"><h2>次回への重点アクション</h2><div class="highlight"><ol style="margin:0;padding-left:18px">'+actions+'</ol></div></div>':'')+
    (d.notes?'<div class="sec"><h2>セッションメモ</h2><div class="note">'+esc(d.notes)+'</div></div>':'')+
    '<div class="foot">NLP Coaching ガイド｜コーチ用評価レポート'+(coach?' ／ '+esc(coach):'')+'</div>'+
@@ -1833,6 +1942,7 @@ function viewHistory(id){
        <div style="flex:1"><div class="pill" style="background:${scoreColor(r.overall)};color:#fff">${scoreText(r.overall)}</div></div>
      </div>
      ${mh}
+     ${r.vak?renderVAKHTML(r.vak):""}
      ${r.notes?`<div class="divider"></div><b class="small">📝 メモ</b><div class="fb" style="margin-top:6px">${esc(r.notes)}</div>`:""}
      ${r.recordingId?`<div class="divider"></div>
        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
