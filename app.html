@@ -1518,10 +1518,28 @@ function openPrintDoc(title,inner){
 function clientFeedbackHTML(d){
   const w=d.workId?WMAP[d.workId]:null, coach=getCoach();
   const tags=(d.tags||[]).map(t=>TAGS[t]?'<span class="chip">'+TAGS[t].icon+' '+TAGS[t].label+'</span>':'').join('');
-  const ms=(d.metrics||[]).slice().sort((a,b)=>b.val-a.val).slice(0,2);
-  const strengths=ms.map(m=>'<li><span class="star">★</span> <b>'+m.label+'</b> — '+m.good+'</li>').join('');
   const steps=w?'<ol class="steps">'+w.steps.map(s=>'<li><b>'+esc(s.title)+'</b></li>').join('')+'</ol>':'';
-  const next=d.notes?esc(d.notes):(w?'「'+w.name+'」で得た感覚を、日常の場面で意識して使ってみましょう。小さく試すことが、定着への近道です。':'今日の気づきを、日常の小さな行動からひとつ試してみましょう。');
+
+  // クライアント自身の貢献を讃える固定メッセージ（コーチ評価ではなく、クライアントが今日見せた力にフォーカス）
+  const clientStrengths=[
+    '<b>勇気を出して話してくださったこと</b> — ご自身の本当の気持ちに向き合い、言葉にされた一歩は、変化の最も大切な始まりです。',
+    '<b>自分の内側に向き合われたこと</b> — 心の奥にある「本当はこうなりたい」という願いを、丁寧に見つめられました。',
+    '<b>新しい視点に開かれたこと</b> — 今日のワークを通じて、これまでとは違う角度から物事を見る扉を開かれました。',
+  ];
+  const strengthsList='<ul style="margin:0;padding-left:2px;list-style:none">'+
+    clientStrengths.map(s=>'<li style="margin:8px 0"><span class="star">★</span> '+s+'</li>').join('')+'</ul>';
+
+  // コーチからのメッセージ：AIモードでは clientMessage、それ以外は温かい汎用メッセージ
+  const coachMsg=d.clientMessage||
+    ('今日あなたが見せてくださった姿勢に、私（コーチ）は大きな可能性を感じています。'+
+     (w?'「'+w.name+'」で得られた気づきや感覚は、これからのあなたの中に必ず残っていきます。':'今日得られた気づきは、これからのあなたの中に必ず残っていきます。')+
+     'どうかご自身のペースで、優しく前へ進んでいかれてください。');
+
+  // 次の一歩：コーチのセッションメモ（クライアントには見せない）は使わず、ワークと普遍的助言を提案
+  const nextStep=w
+    ? '<b>「'+esc(w.name)+'」で得た感覚を日常に。</b><br>頭で考えるよりも、ふとした瞬間に「あの感じ」を思い出してみてください。小さく試すことが、しっかりとした定着への近道です。'
+    : '<b>今日の気づきを、ひとつだけ日常へ。</b><br>大きな変化ではなく、小さな行動を一つ選んで試してみましょう。続けることで、見える景色は少しずつ変わっていきます。';
+
   return '<div class="doc">'+
    '<div class="hero"><div class="lbl">SESSION FEEDBACK</div><h1>セッション フィードバック</h1>'+
      '<div class="meta"><span>👤 '+esc(d.name)+' 様</span><span>📅 '+esc(d.date)+'</span>'+(coach?'<span>🧭 '+esc(coach)+'</span>':'')+'</div></div>'+
@@ -1538,9 +1556,9 @@ function clientFeedbackHTML(d){
        '<div style="margin-top:8px;font-size:12px;color:#6b7c85">📍 '+w.indication+'</div>'+
        '<div style="margin-top:12px;font-size:12px;font-weight:700;color:#226b5f">本日歩んだステップ</div>'+steps+
      '</div></div>':'')+
-   (strengths?'<div class="sec"><h2>今日のあなたの輝き ✨</h2><div class="highlight"><ul style="margin:0;padding-left:2px;list-style:none">'+strengths+'</ul></div></div>':'')+
-   (d.clientMessage?'<div class="sec"><h2>コーチからのメッセージ</h2><div style="background:#e7f4f1;border:1.5px solid #cfe7e1;border-radius:12px;padding:16px 18px">'+esc(d.clientMessage)+'</div></div>':'')+
-   '<div class="sec"><h2>次の一歩</h2><div class="note">'+next+'</div></div>'+
+   '<div class="sec"><h2>今日のあなたが大切にされたこと ✨</h2><div class="highlight">'+strengthsList+'</div></div>'+
+   '<div class="sec"><h2>コーチからのメッセージ</h2><div style="background:#e7f4f1;border:1.5px solid #cfe7e1;border-radius:12px;padding:16px 18px">'+esc(coachMsg)+'</div></div>'+
+   '<div class="sec"><h2>次の一歩</h2><div class="note">'+nextStep+'</div></div>'+
    '<div class="foot">本日は貴重なお時間をありがとうございました。<br>あなたの中には、変化を生み出す力がすでに備わっています。<br>'+(coach?esc(coach)+' ／ ':'')+'NLP Coaching</div>'+
   '</div>';
 }
