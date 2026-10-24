@@ -970,6 +970,23 @@ const WORKS = [
     ],
     cautions:["強いトラウマ・臨床的な恐怖症は医療／心理の専門家の領域。コーチの範囲を超える場合は無理をせず連携する。"],
   },
+  {
+    id:"metaphor", name:"メタファー", en:"Therapeutic Metaphor", icon:"📖",
+    cat:"無意識への働きかけ", dur:20, diff:2, tags:["belief","conflict","emotion","relationship"],
+    purpose:"相手の状況と構造が同じ物語（たとえ話）を語り、抵抗を起こさずに新しい見方や解決の道筋に気づいてもらう。",
+    indication:"正面から助言すると反発が出る、頭では分かっているのに変われない、思い込みが強いクライアントに。",
+    evalKeywords:["物語","話","たとえ","ある人","登場","浮かん","気づ","似て","自分も","もし"],
+    steps:[
+      {title:"状況の構造を聞き取る", script:"それが起きているとき、どんなことが起きていますか？誰が出てきて、どこで行き詰まっていますか？", observe:"登場人物・行き詰まりの形・本人の望みを整理する。中身ではなく『構造』をつかむ。"},
+      {title:"本人の関心を確かめる", script:"休みの日は、どんなことをして過ごしていますか？好きなことは何ですか？", observe:"スポーツ・自然・料理など、相手が興味を持てる世界を物語の舞台に選ぶ。"},
+      {title:"物語を組み立てる", script:"（心の中で）現状 → 葛藤 → リソースとの出会い → 解決、の順に、相手と同じ構造の話を作る。", observe:"舞台は少し離す。そっくりすぎると『自分のことだ』と気づかれて防御が働く。"},
+      {title:"物語を語る", script:"少し別の話をしてもいいですか？ある登山家が、重い荷物を全部一人で背負って山に登ろうとしたんです…", observe:"ゆっくり、相手の表情や呼吸を見ながら語る。うなずき・視線が内側に向くのはよいサイン。"},
+      {title:"リソースと解決を描く", script:"途中で足が止まったとき、ベテランのガイドが言いました。「荷物を分けるのは、仲間を信じることだよ」…", observe:"解決の道筋は示すが、意味の説明はしない。"},
+      {title:"間をおき、解釈を委ねる", script:"（しばらく黙ってから）今の話を聞いて、何か浮かんだことはありますか？", observe:"気づきが出なくても説明して押しつけない。後から効いてくることもある。"},
+      {title:"現実につなげる", script:"明日、その気づきを少し試すとしたら、何をしますか？", observe:"本人から出た気づきを、具体的な小さな行動に落とす。"},
+    ],
+    cautions:["物語の意味を説明しない。「つまり、あなたも〜ですよね」と言うとメタファーの良さが消える。","ラポールができていない段階で唐突に語らない。「少し別の話をしてもいいですか？」と許可をとる。"],
+  },
 ];
 
 const WMAP = Object.fromEntries(WORKS.map(w=>[w.id,w]));
@@ -2776,7 +2793,7 @@ const LISTS = {
   belief:{label:"ビリーフを変えるワーク（9）", ids:["milton","metaphor","submod","metamodel","reframing","intention","timeline","history","squash"]}
 };
 /* このアプリの進行ガイドにあるワークとの対応 */
-const GUIDE = {outcome:"wfo",neuro:"logical",timeline:"timeline",anchoring:"anchor",reframing:"reframe",swish:"swish",positions:"position",parts:"parts",squash:"parts",submod:"submod",metamodel:"metamodel",strategy:"strategy",circle:"circle",phobia:"phobia"};
+const GUIDE = {outcome:"wfo",neuro:"logical",timeline:"timeline",anchoring:"anchor",reframing:"reframe",swish:"swish",positions:"position",parts:"parts",squash:"parts",submod:"submod",metamodel:"metamodel",strategy:"strategy",circle:"circle",phobia:"phobia",metaphor:"metaphor"};
 
 let list="terms", filter="all", query="", cur=null;
 let left=180, tid=null;
