@@ -10,6 +10,21 @@ NLPコーチングのコーチ用ガイドアプリと、ガイドブックPDF�
 | **guidebook.pdf** | NLPコーチング ガイドブック（全31ページ・21ワーク収録） |
 | build_guidebook.py | ガイドブックPDFの生成スクリプト（再生成用） |
 
+## 公開先（どこで動いているか）
+
+| 場所 | URL | 備考 |
+|---|---|---|
+| **本番（自社VPS）** | https://nlp.fun-create.co.jp/ | Caddy の静的配信・HTTPS 自動（Let's Encrypt）・ログイン不要 |
+| 予備（GitHub Pages） | https://fun-create.github.io/nlp-coaching/ | リポジトリから自動配信。停止する場合は GitHub の Settings → Pages で無効化 |
+
+データ（履歴・録音・学習記録・APIキー）は**開いた端末のブラウザ内**に保存されるため、URL が変わると別扱いになります。移行時は「⬇ 書き出し／⬆ 読み込み」をご利用ください。
+
+### VPS の更新手順（コーチ用・運用メモ）
+1. 変更を GitHub の `main` に push する
+2. VPS で `sudo nlp-update` を実行（`--check` で差分確認のみ）。再起動は不要
+   - 配置先 `/opt/nlp`（GitHub の main の写し）／Caddy 設定は `/etc/caddy/Caddyfile` の `nlp.fun-create.co.jp` ブロック
+   - サーバー上のファイルは直接編集しない（次の更新で消える）
+
 ## アプリの使い方
 
 `app.html` をダブルクリックしてブラウザで開くだけで使えます。インターネット接続も不要です。
