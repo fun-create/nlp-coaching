@@ -213,6 +213,24 @@
   .mindset-card .mc-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:7px}
   .mindset-card .mc-body{font-size:13.5px;color:var(--ink);line-height:1.8}
   .mindset-card .mc-tip{margin-top:9px;background:var(--accent-l);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--accent)}
+  /* power up question */
+  .pu-card{max-width:600px}
+  .pu-card .hidden{display:none!important}
+  .pu-card .dlg-head{display:flex;align-items:center;margin-bottom:12px}
+  .pu-card .dlg-head b{font-size:15px;flex:1}
+  .pu-pos{font-size:11.5px;color:var(--muted);margin-right:10px}
+  .pu-head{font-size:12.5px;color:var(--muted);margin:0 0 8px}
+  .pu-card .dd-hint{font-size:11.5px;color:var(--muted);margin:2px 0 10px;line-height:1.7}
+  .pu-body{white-space:pre-line;line-height:1.9;font-size:16px;margin:6px 0 10px;min-height:4.5em}
+  .pu-body.pu-q,.pu-body.pu-opt{font-weight:700}
+  .pu-body.pu-word{font-size:17px;font-style:italic;padding:14px 16px;background:var(--brand-l);border-radius:10px}
+  .pu-body.pu-close{font-size:22px;font-weight:700;text-align:center;padding:26px 0}
+  .pu-body.pu-start{font-size:15px;font-weight:400;color:var(--muted);min-height:0}
+  .pu-body.pu-start::first-line{font-size:20px;font-weight:700;color:var(--ink)}
+  .pu-by{text-align:right;font-size:12.5px;color:var(--muted);margin:0 0 6px}
+  .pu-foot{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+  .pu-foot:has([data-pu="go"]){justify-content:flex-start}
+  .pu-card .x{background:none;border:none;font-size:17px;cursor:pointer;color:var(--muted)}
   /* quiz */
   .qtheme{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
   .qtheme button{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:14px 12px;text-align:left;cursor:pointer;transition:.15s;box-shadow:var(--shadow);font-family:inherit}
@@ -322,6 +340,7 @@
       <button data-view="history"><span class="ic">🗂️</span>履歴</button>
       <button data-view="library"><span class="ic">📚</span>NLPガイド</button>
       <button data-view="quiz"><span class="ic">📝</span>問題集</button>
+      <button data-view="powerup"><span class="ic">⚡</span>パワーアップ</button>
       <button data-view="settings"><span class="ic">⚙️</span>設定</button>
     </nav>
     <div class="foot">
@@ -363,6 +382,14 @@
           <div class="small muted" id="home-quiz-sub">—</div>
         </div>
         <button class="btn sm" onclick="go('quiz');startQuiz('daily')">▶ 今日の15分</button>
+      </div>
+      <div class="card" id="home-pu-card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-size:34px" id="home-pu-ico">⚡</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;color:var(--brand-d)">パワーアップクエスチョン</div>
+          <div class="small muted" id="home-pu-sub">—</div>
+        </div>
+        <button class="btn sm" onclick="go('powerup')">▶ はじめる</button>
       </div>
       <div class="row">
         <div class="col card" style="background:linear-gradient(160deg,#2f8f7f,#22675c);color:#fff;border:0">
@@ -596,6 +623,22 @@
       <div id="lib-mindset" style="display:none"></div>
       <div id="lib-works" style="display:none"><div class="rec" id="lib-list"></div></div>
       <div id="lib-terms" style="display:none;scroll-margin-top:16px"></div>
+    </section>
+
+    <!-- POWER UP QUESTION -->
+    <section class="view" id="view-powerup">
+      <div class="page-h"><h2>⚡ パワーアップクエスチョン</h2><p>Anthony Robbins の Power up question。午前は朝の5問、午後は夜の3問（＋オプション）を1問ずつ。声に出して答えてから「次へ」。</p></div>
+      <div class="card pu-card">
+        <div class="dlg-head"><b id="pu-title">Power up question</b>
+          <span class="pu-pos" id="pu-pos"></span>
+          <button type="button" class="x" id="pu-x" aria-label="閉じる">✕</button></div>
+        <p class="pu-head" id="pu-head"></p>
+        <p class="dd-hint hidden" id="pu-note"></p>
+        <p class="pu-body" id="pu-body"></p>
+        <p class="pu-by hidden" id="pu-by"></p>
+        <div class="pu-foot" id="pu-foot"></div>
+      </div>
+      <p class="tiny muted">朝の言葉は順番に1日1つ、夜の言葉は日替わり。正午（端末の時計）で朝／夜が切り替わります。入口で朝／夜を切り替えることもできます。</p>
     </section>
 
     <!-- QUIZ -->
@@ -1230,6 +1273,7 @@ function go(view){
   if(view==='library'){renderLibrary();switchLibTab(_libTab||'usage');}
   if(view==='settings')renderSettings();
   if(view==='quiz')renderQuiz();
+  if(view==='powerup'&&window.PowerUp)PowerUp.open();
   if(view==='evaluate')renderEvalTranscriptBanner();
   window.scrollTo(0,0);
 }
@@ -2242,6 +2286,7 @@ function renderUsage(){
          {label:"履歴",title:"🗂️ 履歴と PDF",body:"履歴画面で過去のセッション一覧を確認。録音再生・文字起こし表示・PDF再出力・残りの課題の引き継ぎが可能。",tip:"履歴とコーチプロフィールは「⬇書き出し」「⬆読み込み」で他端末へ移行できます。"},
          {label:"配布",title:"📥 配布資料のダウンロード",body:"ホーム画面の「クライアント向け配布資料」セクションから、事前ワークシート（Word）／案内メール文面／代表システム優先度テスト（Excel）／望むこと100個（Excel）／ガイドブック（PDF）をダウンロード・コピーできます。",tip:"事前ワークの記入済みWord・メール本文は、ヒアリングページから自動で課題リストに取り込めます。"},
          {label:"プロフィール",title:"👤 コーチプロフィール",body:"設定画面の「コーチプロフィール」で表示名・フルネームを登録すると、ホーム画面の挨拶・PDFの発行者名に反映されます。",tip:"表示名は呼びかけ（例：Yuki）、フルネームはPDFの署名に使われます。"},
+         {label:"パワーアップ",title:"⚡ パワーアップクエスチョン",body:"Anthony Robbins の Power up question。午前（12時まで）は朝の5問 → 今日の言葉（順番・1日1つ）→「今日も1日楽しんでいこう！」。午後は夜の3問 → ④で「朝の質問も続ける／終了する」→ 今日の言葉（日替わり）→「おやすみなさい！」。入口で朝／夜を切り替えられます。",tip:"それぞれ少なくとも2〜3の答えを考え、声に出してから「次へ」。朝・夜のリマインダー通知からも開けます。"},
          {label:"問題集",title:"📝 問題集（毎日15分の学習）",body:"ワーク・用語・前提・心構えを、4択／○×／手順の並べ替え・穴埋め／3分説明の自己採点で出題。間違えた項目はセッションの最後と翌日以降に繰り返し出題され、正解を重ねると復習間隔が伸びます（1→3→7→14→30日）。習得状況は「覚えた／学習中／未学習」と8週間カレンダーで確認できます。",tip:"朝・夜のリマインダーは「📅 カレンダーに登録」が最も確実。スマホは「ホーム画面に追加」で1タップ起動。"},
          {label:"バックアップ",title:"💾 自動バックアップ＆データ移行",body:"セッション保存時に履歴JSONを、PDF出力時にフィードバックHTMLを、それぞれ自動でDownloadsへ保存します（両方デフォルトON）。HTMLはブラウザで開いて再印刷／PDF化が可能。設定画面と履歴画面に「📥 今すぐバックアップ」、左メニュー下部に「⬇書き出し／⬆読み込み」もあります。録音音声は含まれない点にご注意ください。",tip:"古いバックアップはDownloadsに溜まるので、月1回程度まとめて整理を。"},
        ].map(m=>`
@@ -2415,7 +2460,7 @@ function greetingWord(){
   return"お疲れさまです";
 }
 function renderHome(){
-  renderHomeQuiz();
+  renderHomeQuiz();renderHomePU();
   // 挨拶
   const name=getCoachDisplay();
   const greeting=document.getElementById('home-greeting');
@@ -2854,6 +2899,226 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 /* ===================== 初期化 ===================== */
 document.getElementById('h-date').value=todayStr();
+/* ===================== Power up question（パワーアップクエスチョン） =====================
+   原本: calendar-for-fun-create/ui/powerup.js（2026-10-10 十文字さん依頼）。
+   質問・言葉・流れ・言葉の選び方（朝は順番で1日1つ／夜は日付から決める）は原本どおり。言い換えない。
+   このアプリでは dialog ではなく「⚡ パワーアップ」ビューに描き、閉じるとホームへ戻る。
+
+   朝（12:00 まで）… 朝の①〜⑤ → 言葉（順番） → 「今日も1日楽しんでいこう！」
+   夜（12:00 から）… 夜の①〜③ → ④で「朝の質問も続ける／終了」を選ぶ
+                      → 言葉（毎日1つ・日替わり） → 「おやすみなさい！」 */
+(function () {
+  "use strict";
+
+  const MORNING = [
+    "私は今、人生の中で何が幸せだろう？\n私を幸せにするのは、どんなことだろう？\nそれは、私をどのような気持ちにさせる？",
+    "私は今、人生の中で何にワクワクしているだろう？\n私をワクワクさせるのは、どんなことだろう？\nそれは、私をどのような気持ちにさせる？",
+    "私は今、人生において何を達成するだろう？\nそれは、私をどのような気持ちにさせる？",
+    "私は、今、人生の中で何に感謝しているんだろう？\n私に感謝させるのは、どんなことだろう？\nそれは、私をどのような気持ちにさせる？",
+    "私は、今人生の中で何を最も楽しんでいるだろうか？\n私が楽しむのは、どんなことだろう？\nそれは、私をどのような気持ちにさせる？",
+  ];
+  const EVENING = [
+    "私は今日、自分に何を与えただろう？\nそして、社会に何を与えただろう？\nどのようなやり方で貢献しただろう？",
+    "今日私は、何を学んだだろう？\n新しく創り出した違いは何だろう？",
+    "今日という日は、どのように人生のクオリティを向上させただろう？\n今日を未来への投資としてどのように使えるだろう？",
+  ];
+  // 質問の前に出す心得（朝夜とも同じ）
+  const HOWTO = "少なくとも2〜3の答えを考えます。ぴったり答えが浮かばないときには「もしそうだとしたら」というところから答えを探しだします（言葉にして出す）。";
+
+  // 朝の言葉。順番に出す。出典の無い一般的な励ましは「—」
+  const MORNING_WORDS = [
+    ["今日という日は、残りの人生の最初の日。", "アビー・ホフマン"],
+    ["できると思えばできる。できないと思えばできない。どちらも正しい。", "ヘンリー・フォード"],
+    ["千里の道も一歩から。", "老子"],
+    ["人生とは、自分を見つけることではない。自分を創ることだ。", "ジョージ・バーナード・ショー"],
+    ["未来を予測する最善の方法は、それを創り出すことだ。", "ピーター・ドラッカー"],
+    ["明日死ぬかのように生きよ。永遠に生きるかのように学べ。", "マハトマ・ガンジー"],
+    ["始めるために偉大である必要はない。しかし、偉大になるためには始めなければならない。", "ジグ・ジグラー"],
+    ["幸福とは、何かを持つことではなく、何かをすることの中にある。", "—"],
+    ["道を選ぶということは、必ずしも歩きやすい道を選ぶということではない。", "—"],
+    ["笑顔は、あなたが持っている最高の化粧品。", "—"],
+    ["成功とは、情熱を失わずに失敗から失敗へと進むことである。", "ウィンストン・チャーチル"],
+    ["行動がすべての成功への基本的な鍵である。", "パブロ・ピカソ"],
+    ["一日一日を、最高の一日にしよう。", "ジョン・ウッデン"],
+    ["あなたが世界に見たいと願う変化に、あなた自身がなりなさい。", "マハトマ・ガンジー"],
+    ["最も大切なことは、人生を楽しむこと。幸せでいること。それがすべてだ。", "オードリー・ヘップバーン"],
+    ["小さなことを積み重ねることが、とんでもないところへ行くただひとつの道。", "イチロー"],
+    ["人は、自分が思い描いたとおりの人間になる。", "アール・ナイチンゲール"],
+    ["困難の中に、機会がある。", "アルベルト・アインシュタイン"],
+    ["今日できることを明日に延ばすな。", "ベンジャミン・フランクリン"],
+    ["自分を信じよう。あなたは自分が思っているより、ずっと多くのことができる。", "—"],
+  ];
+  const MORNING_CLOSE = "今日も1日楽しんでいこう！";
+
+  // 夜の言葉。日替わり。癒し・労い・明日への力
+  const EVENING_WORDS = [
+    ["今日一日、本当におつかれさま。あなたは今日も、ちゃんと前に進んだ。", "—"],
+    ["休むことも、前に進むための大切な一歩。", "—"],
+    ["夜はすべてのものを静かにし、朝はすべてのものを新しくする。", "—"],
+    ["明日は明日の風が吹く。", "—"],
+    ["星を見るためには、暗さが必要だ。", "—"],
+    ["今日できなかったことは、明日のあなたへの贈り物。", "—"],
+    ["一日の終わりに「よくやった」と自分に言えること、それが何よりの財産。", "—"],
+    ["眠りは、最良の瞑想である。", "ダライ・ラマ14世"],
+    ["過去に悩まず、未来を恐れず、今日という一日に感謝しよう。", "—"],
+    ["どんな長い夜も、必ず明ける。", "—"],
+    ["完璧でなくていい。今日のあなたは、今日のあなたで十分だった。", "—"],
+    ["人生で最も大切な日は二日ある。生まれた日と、生まれた理由を知った日だ。", "マーク・トウェイン"],
+    ["焦らなくていい。花は咲く時期を知っている。", "—"],
+    ["人生は一冊の書物に似ている。愚者はそれをめくり、賢者は念入りに読む。", "ジャン・パウル"],
+    ["今日の疲れは、今日がんばった証。ゆっくり休もう。", "—"],
+    ["幸福への道はただひとつ。自分の意志ではどうにもならないことについて、思い悩むのをやめることだ。", "エピクテトス"],
+    ["どんなに暗くても、朝は来る。そして朝はいつも、新しい。", "—"],
+    ["あなたの今日のがんばりを、ちゃんと見ている人がいる。まず、あなた自身が。", "—"],
+    ["木を植える最も良い時期は20年前だった。次に良いのは、今日だ。", "—"],
+    ["今日を手放そう。明日は明日で、また始められる。", "—"],
+  ];
+  const EVENING_CLOSE = "おやすみなさい！";
+  // 入口（最初の画面）。ここで朝／夜を切り替えられる
+  const START = {
+    morning: ["☀ おはようございます",
+              "朝のパワーアップクエスチョン（5問）です。それぞれ少なくとも2〜3の答えを考え、声に出してから「次へ」。"],
+    evening: ["🌙 おつかれさまでした",
+              "夜のパワーアップクエスチョン（3問）です。それぞれ少なくとも2〜3の答えを考え、声に出してから「次へ」。"],
+  };
+
+  const $ = (s) => document.querySelector(s);
+  const isMorning = (d) => (d || new Date()).getHours() < 12;
+  const dayKey = (d) => {
+    d = d || new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+      + "-" + String(d.getDate()).padStart(2, "0");
+  };
+
+  /** 朝の言葉の番号。1日1つ（同じ日に何度開いても同じ）。日が変わったら次へ。 */
+  function morningWordIndex() {
+    const K = "nlp-pu-morning";
+    let st = {};
+    try { st = JSON.parse(localStorage.getItem(K) || "{}") || {}; } catch (e) { st = {}; }
+    const today = dayKey();
+    if (st.day !== today) {
+      st = { day: today, idx: ((Number.isInteger(st.idx) ? st.idx : -1) + 1) % MORNING_WORDS.length };
+      try { localStorage.setItem(K, JSON.stringify(st)); } catch (e) { /* 保存できなくても出す */ }
+    }
+    return st.idx;
+  }
+
+  /** 夜の言葉の番号。日付から決める（同じ晩は同じ。日が変われば変わる）。乱数は使わない。 */
+  function eveningWordIndex(d) {
+    const k = dayKey(d);
+    let h = 0;
+    for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return h % EVENING_WORDS.length;
+  }
+
+  /** 入口の画面。「はじめる」で質問へ、もう片方の質問にも切り替えられる */
+  function startStep(morning) {
+    const [greet, lead] = morning ? START.morning : START.evening;
+    return { kind: "start", head: "", body: greet + "\n" + lead, by: "Anthony Robbins",
+      buttons: [["go", "はじめる"], ["other", morning ? "夜の質問をする" : "朝の質問をする"]] };
+  }
+
+  /** 流れを「画面の列」にする。1画面 = {kind, head, body, by, buttons} */
+  function steps(morning) {
+    const out = [];
+    // 夜は④がオプションなので、番号は「/ 4」で数える
+    const q = (title, list, total) => list.forEach((text, i) => out.push({
+      kind: "q", head: `${title} ${i + 1} / ${total || list.length}`, body: text,
+      note: i === 0 ? HOWTO : "", buttons: [["next", "次へ"]],
+    }));
+    if (morning) {
+      q("朝のパワーアップクエスチョン", MORNING);
+      const [w, by] = MORNING_WORDS[morningWordIndex()];
+      out.push({ kind: "word", head: "今日の言葉", body: w, by, buttons: [["next", "次へ"]] });
+      out.push({ kind: "close", head: "", body: MORNING_CLOSE, buttons: [["done", "閉じる"]] });
+    } else {
+      q("夜のパワーアップクエスチョン", EVENING, EVENING.length + 1);
+      // ④ オプション: 朝の質問を続けるか、終わるか
+      out.push({ kind: "opt", head: "夜のパワーアップクエスチョン 4 / 4（オプション）",
+        body: "朝のパワーアップクエスチョンを繰り返しますか？",
+        buttons: [["morning", "朝の質問も続ける"], ["skip", "終了する"]] });
+    }
+    return out;
+  }
+
+  let FLOW = [], AT = 0, MORNING_NOW = true;
+
+  function render() {
+    const s = FLOW[AT];
+    $("#pu-head").textContent = s.head;
+    $("#pu-head").classList.toggle("hidden", !s.head);
+    $("#pu-note").textContent = s.note || "";
+    $("#pu-note").classList.toggle("hidden", !s.note);
+    $("#pu-body").textContent = s.body;
+    $("#pu-body").className = "pu-body pu-" + s.kind;
+    $("#pu-by").textContent = s.by && s.by !== "—" ? "— " + s.by : "";
+    $("#pu-by").classList.toggle("hidden", !(s.by && s.by !== "—"));
+    const foot = $("#pu-foot");
+    foot.innerHTML = s.buttons.map(([k, label]) =>
+      `<button type="button" class="btn ${k === "skip" || k === "other" ? "ghost" : ""}" data-pu="${k}">${label}</button>`).join("");
+    foot.querySelectorAll("[data-pu]").forEach(b => b.addEventListener("click", () => act(b.dataset.pu)));
+    // 入口は数えない（「1 / 8」の 1 が入口だと、質問が7つあるように見える）
+    $("#pu-pos").textContent = s.kind === "start" ? "" : `${AT} / ${FLOW.length - 1}`;
+    window.scrollTo(0, 0);
+  }
+
+  /** 夜の締め。朝の質問を続けた場合も、最後は夜の言葉と「おやすみなさい！」 */
+  function eveningTail() {
+    const [w, by] = EVENING_WORDS[eveningWordIndex()];
+    return [
+      { kind: "word", head: "今日の言葉", body: w, by, buttons: [["next", "次へ"]] },
+      { kind: "close", head: "", body: EVENING_CLOSE, buttons: [["done", "閉じる"]] },
+    ];
+  }
+
+  /** このアプリでは「閉じる」＝ホームへ戻る（次に開くときは必ず入口から） */
+  function close() { FLOW = []; AT = 0; if (typeof go === "function") go("home"); }
+
+  function act(k) {
+    if (k === "done") { close(); return; }
+    if (k === "other") {
+      // 入口で朝／夜を切り替える。時刻の判定は変えない（入口の表示だけが入れ替わる）
+      MORNING_NOW = !MORNING_NOW;
+      FLOW = [startStep(MORNING_NOW)].concat(steps(MORNING_NOW));
+      AT = 0;
+      $("#pu-title").textContent = MORNING_NOW ? "☀ Power up question（朝）" : "🌙 Power up question（夜）";
+      render();
+      return;
+    }
+    if (k === "morning") {
+      // 夜の④で「続ける」: 朝の①〜⑤ → 夜の言葉 → おやすみなさい
+      const rest = steps(true).filter(x => x.kind === "q");
+      FLOW = FLOW.slice(0, AT + 1).concat(rest, eveningTail());
+    } else if (k === "skip") {
+      FLOW = FLOW.slice(0, AT + 1).concat(eveningTail());
+    }
+    AT += 1;
+    if (AT >= FLOW.length) { close(); return; }
+    render();
+  }
+
+  /** 開く。必ず入口から。`now` は検査用（省略で端末の今） */
+  function open(now) {
+    MORNING_NOW = isMorning(now);
+    FLOW = [startStep(MORNING_NOW)].concat(steps(MORNING_NOW));
+    AT = 0;
+    $("#pu-title").textContent = MORNING_NOW ? "☀ Power up question（朝）" : "🌙 Power up question（夜）";
+    render();
+  }
+
+  window.PowerUp = { open, steps, startStep, isMorning, morningWordIndex, eveningWordIndex, act,
+    MORNING, EVENING, MORNING_WORDS, EVENING_WORDS, MORNING_CLOSE, EVENING_CLOSE, current: () => ({ flow: FLOW, at: AT, morning: MORNING_NOW }) };
+
+  const x = $("#pu-x");
+  if (x) x.addEventListener("click", close);
+})();
+function renderHomePU(){
+  const el=document.getElementById('home-pu-sub');if(!el||!window.PowerUp)return;
+  const m=PowerUp.isMorning();
+  document.getElementById('home-pu-ico').textContent=m?'☀':'🌙';
+  el.textContent=m?'朝のパワーアップクエスチョン（5問）＋今日の言葉 — Anthony Robbins':'夜のパワーアップクエスチョン（3問＋オプション）＋今日の言葉 — Anthony Robbins';
+}
+
 /* ===================== 問題集（学習モード） ===================== */
 const QUIZ_KEY='nlp_quiz_progress', QUIZ_DAILY='nlp_quiz_daily', QUIZ_SET='nlp_quiz_settings', QUIZ_FIRED='nlp_rem_fired';
 const QBOX_DAYS=[0,1,3,7,14,30];
@@ -3106,12 +3371,12 @@ async function remEnable(){
 }
 async function fireReminder(key){
   const title=key==='am'?'☀️ おはようございます — NLP問題集':key==='pm'?'🌙 今日の復習 — NLP問題集':'🔔 テスト通知 — NLP問題集';
-  const body=key==='test'?'通知はこのように届きます。':'今日の15分を始めましょう。';
+  const body=key==='am'?'朝のパワーアップクエスチョン（5問）→ 今日の15分（問題集）':key==='pm'?'夜のパワーアップクエスチョン（3問）→ 今日の復習':'通知はこのように届きます。';
   try{
     if('Notification' in window&&Notification.permission==='granted'){
       const reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration():null;
-      if(reg&&reg.showNotification)await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'nlp-rem-'+key,data:{url:appURL()+'#quiz'}});
-      else{const nt=new Notification(title,{body,icon:'icon-192.png'});nt.onclick=()=>{window.focus();go('quiz');};}
+      if(reg&&reg.showNotification)await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'nlp-rem-'+key,data:{url:appURL()+(key==='test'?'#quiz':'#powerup')}});
+      else{const nt=new Notification(title,{body,icon:'icon-192.png'});nt.onclick=()=>{window.focus();go(key==='test'?'quiz':'powerup');};}
     }else if(key==='test'){const okp=await remEnable();if(okp)return fireReminder('test');}
   }catch(e){}
   toast(title+'　'+body);
@@ -3132,7 +3397,7 @@ function downloadICS(){
 }
 function registerSW(){if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{});}}
 
-renderTagChips();renderChallenges();updateSelLabel();setupDrop();renderHome();renderRecbar();remInit();registerSW();if(location.hash==='#quiz')go('quiz');
+renderTagChips();renderChallenges();updateSelLabel();setupDrop();renderHome();renderRecbar();remInit();registerSW();if(location.hash==='#quiz')go('quiz');if(location.hash==='#powerup')go('powerup');
 </script>
 <script>
 /* ===== 用語ガイド（NLPガイド > 用語ガイド タブ） ===== */
